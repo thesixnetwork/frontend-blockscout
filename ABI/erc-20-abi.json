@@ -1,0 +1,595 @@
+[
+  {
+    "inputs": [
+      { "internalType": "string", "name": "_name", "type": "string" },
+      { "internalType": "string", "name": "_symbol", "type": "string" },
+      { "internalType": "uint256", "name": "_supply", "type": "uint256" },
+      { "internalType": "address", "name": "_owner", "type": "address" }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  { "inputs": [], "type": "error", "name": "AllocationExceedsCap" },
+  { "inputs": [], "type": "error", "name": "AssetUpdaterDoesNotExist" },
+  { "inputs": [], "type": "error", "name": "AssetUpdaterExists" },
+  { "inputs": [], "type": "error", "name": "CallerNotAssetUpdater" },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "increasedSupply",
+        "type": "uint256"
+      },
+      { "internalType": "uint256", "name": "cap", "type": "uint256" }
+    ],
+    "type": "error",
+    "name": "ERC20ExceededCap"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "spender", "type": "address" },
+      { "internalType": "uint256", "name": "allowance", "type": "uint256" },
+      { "internalType": "uint256", "name": "needed", "type": "uint256" }
+    ],
+    "type": "error",
+    "name": "ERC20InsufficientAllowance"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "sender", "type": "address" },
+      { "internalType": "uint256", "name": "balance", "type": "uint256" },
+      { "internalType": "uint256", "name": "needed", "type": "uint256" }
+    ],
+    "type": "error",
+    "name": "ERC20InsufficientBalance"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "approver", "type": "address" }
+    ],
+    "type": "error",
+    "name": "ERC20InvalidApprover"
+  },
+  {
+    "inputs": [{ "internalType": "uint256", "name": "cap", "type": "uint256" }],
+    "type": "error",
+    "name": "ERC20InvalidCap"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "receiver", "type": "address" }
+    ],
+    "type": "error",
+    "name": "ERC20InvalidReceiver"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "sender", "type": "address" }
+    ],
+    "type": "error",
+    "name": "ERC20InvalidSender"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "spender", "type": "address" }
+    ],
+    "type": "error",
+    "name": "ERC20InvalidSpender"
+  },
+  { "inputs": [], "type": "error", "name": "HolderDoesNotExist" },
+  { "inputs": [], "type": "error", "name": "HolderExists" },
+  { "inputs": [], "type": "error", "name": "HoldersAndAmountLengthMismatch" },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "owner", "type": "address" }
+    ],
+    "type": "error",
+    "name": "OwnableInvalidOwner"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "account", "type": "address" }
+    ],
+    "type": "error",
+    "name": "OwnableUnauthorizedAccount"
+  },
+  {
+    "inputs": [],
+    "type": "event",
+    "name": "AllAssetUpdatersRevoked",
+    "anonymous": false
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address",
+        "indexed": true
+      },
+      {
+        "internalType": "address",
+        "name": "spender",
+        "type": "address",
+        "indexed": true
+      },
+      {
+        "internalType": "uint256",
+        "name": "value",
+        "type": "uint256",
+        "indexed": false
+      }
+    ],
+    "type": "event",
+    "name": "Approval",
+    "anonymous": false
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "updater",
+        "type": "address",
+        "indexed": false
+      }
+    ],
+    "type": "event",
+    "name": "AssetUpdaterAdded",
+    "anonymous": false
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "updater",
+        "type": "address",
+        "indexed": false
+      }
+    ],
+    "type": "event",
+    "name": "AssetUpdaterRemoved",
+    "anonymous": false
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "holder",
+        "type": "string",
+        "indexed": false
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false
+      },
+      {
+        "internalType": "string",
+        "name": "externalId",
+        "type": "string",
+        "indexed": false
+      }
+    ],
+    "type": "event",
+    "name": "HolderAdded",
+    "anonymous": false
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "holder",
+        "type": "string",
+        "indexed": false
+      },
+      {
+        "internalType": "uint256",
+        "name": "previousAmount",
+        "type": "uint256",
+        "indexed": false
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false
+      },
+      {
+        "internalType": "string",
+        "name": "externalId",
+        "type": "string",
+        "indexed": false
+      }
+    ],
+    "type": "event",
+    "name": "HolderUpdated",
+    "anonymous": false
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string[]",
+        "name": "holders",
+        "type": "string[]",
+        "indexed": false
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "amounts",
+        "type": "uint256[]",
+        "indexed": false
+      },
+      {
+        "internalType": "string[]",
+        "name": "externalIds",
+        "type": "string[]",
+        "indexed": false
+      }
+    ],
+    "type": "event",
+    "name": "MultipleHoldersAdded",
+    "anonymous": false
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string[]",
+        "name": "holders",
+        "type": "string[]",
+        "indexed": false
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "previousAmounts",
+        "type": "uint256[]",
+        "indexed": false
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "amounts",
+        "type": "uint256[]",
+        "indexed": false
+      },
+      {
+        "internalType": "string[]",
+        "name": "holdersExternalIds",
+        "type": "string[]",
+        "indexed": false
+      }
+    ],
+    "type": "event",
+    "name": "MultipleHoldersUpdated",
+    "anonymous": false
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "previousOwner",
+        "type": "address",
+        "indexed": true
+      },
+      {
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address",
+        "indexed": true
+      }
+    ],
+    "type": "event",
+    "name": "OwnershipTransferred",
+    "anonymous": false
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "from",
+        "type": "address",
+        "indexed": true
+      },
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address",
+        "indexed": true
+      },
+      {
+        "internalType": "uint256",
+        "name": "value",
+        "type": "uint256",
+        "indexed": false
+      }
+    ],
+    "type": "event",
+    "name": "Transfer",
+    "anonymous": false
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "updater", "type": "address" }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function",
+    "name": "addAssetUpdater"
+  },
+  {
+    "inputs": [
+      { "internalType": "string", "name": "holder", "type": "string" },
+      { "internalType": "uint256", "name": "amount", "type": "uint256" },
+      { "internalType": "string", "name": "externalId", "type": "string" }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function",
+    "name": "addHolder"
+  },
+  {
+    "inputs": [
+      { "internalType": "string[]", "name": "holders", "type": "string[]" },
+      { "internalType": "uint256[]", "name": "amounts", "type": "uint256[]" },
+      { "internalType": "string[]", "name": "externalIds", "type": "string[]" }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function",
+    "name": "addMultipleHolders"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "owner", "type": "address" },
+      { "internalType": "address", "name": "spender", "type": "address" }
+    ],
+    "stateMutability": "view",
+    "type": "function",
+    "name": "allowance",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }]
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "spender", "type": "address" },
+      { "internalType": "uint256", "name": "value", "type": "uint256" }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function",
+    "name": "approve",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }]
+  },
+  {
+    "inputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function",
+    "name": "assetUpdatersList",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }]
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "account", "type": "address" }
+    ],
+    "stateMutability": "view",
+    "type": "function",
+    "name": "balanceOf",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }]
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "amount", "type": "uint256" }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function",
+    "name": "burn"
+  },
+  {
+    "inputs": [],
+    "stateMutability": "view",
+    "type": "function",
+    "name": "cap",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }]
+  },
+  {
+    "inputs": [],
+    "stateMutability": "view",
+    "type": "function",
+    "name": "decimals",
+    "outputs": [{ "internalType": "uint8", "name": "", "type": "uint8" }]
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "offset", "type": "uint256" },
+      { "internalType": "uint256", "name": "limit", "type": "uint256" }
+    ],
+    "stateMutability": "view",
+    "type": "function",
+    "name": "getAssetUpdatersListPagination",
+    "outputs": [
+      { "internalType": "address[]", "name": "", "type": "address[]" }
+    ]
+  },
+  {
+    "inputs": [
+      { "internalType": "string", "name": "holder", "type": "string" }
+    ],
+    "stateMutability": "view",
+    "type": "function",
+    "name": "getHolderBalance",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }]
+  },
+  {
+    "inputs": [
+      { "internalType": "string", "name": "holder", "type": "string" }
+    ],
+    "stateMutability": "view",
+    "type": "function",
+    "name": "getHolderExternalId",
+    "outputs": [{ "internalType": "string", "name": "", "type": "string" }]
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "offset", "type": "uint256" },
+      { "internalType": "uint256", "name": "limit", "type": "uint256" }
+    ],
+    "stateMutability": "view",
+    "type": "function",
+    "name": "getHoldersListPagination",
+    "outputs": [{ "internalType": "string[]", "name": "", "type": "string[]" }]
+  },
+  {
+    "inputs": [],
+    "stateMutability": "view",
+    "type": "function",
+    "name": "getTotalAllocatedAmount",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }]
+  },
+  {
+    "inputs": [],
+    "stateMutability": "view",
+    "type": "function",
+    "name": "getTotalAssetUpdaters",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }]
+  },
+  {
+    "inputs": [],
+    "stateMutability": "view",
+    "type": "function",
+    "name": "getTotalHolders",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }]
+  },
+  {
+    "inputs": [{ "internalType": "string", "name": "", "type": "string" }],
+    "stateMutability": "view",
+    "type": "function",
+    "name": "holderBalances",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }]
+  },
+  {
+    "inputs": [{ "internalType": "string", "name": "", "type": "string" }],
+    "stateMutability": "view",
+    "type": "function",
+    "name": "holderExternalIds",
+    "outputs": [{ "internalType": "string", "name": "", "type": "string" }]
+  },
+  {
+    "inputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function",
+    "name": "holdersList",
+    "outputs": [{ "internalType": "string", "name": "", "type": "string" }]
+  },
+  {
+    "inputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function",
+    "name": "isAssetUpdater",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }]
+  },
+  {
+    "inputs": [{ "internalType": "string", "name": "", "type": "string" }],
+    "stateMutability": "view",
+    "type": "function",
+    "name": "isHolders",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }]
+  },
+  {
+    "inputs": [],
+    "stateMutability": "view",
+    "type": "function",
+    "name": "name",
+    "outputs": [{ "internalType": "string", "name": "", "type": "string" }]
+  },
+  {
+    "inputs": [],
+    "stateMutability": "view",
+    "type": "function",
+    "name": "owner",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }]
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "updater", "type": "address" }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function",
+    "name": "removeAssetUpdater"
+  },
+  {
+    "inputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function",
+    "name": "renounceOwnership"
+  },
+  {
+    "inputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function",
+    "name": "revokeAllAssetUpdaters"
+  },
+  {
+    "inputs": [],
+    "stateMutability": "view",
+    "type": "function",
+    "name": "symbol",
+    "outputs": [{ "internalType": "string", "name": "", "type": "string" }]
+  },
+  {
+    "inputs": [],
+    "stateMutability": "view",
+    "type": "function",
+    "name": "totalAllocatedAmount",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }]
+  },
+  {
+    "inputs": [],
+    "stateMutability": "view",
+    "type": "function",
+    "name": "totalSupply",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }]
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "to", "type": "address" },
+      { "internalType": "uint256", "name": "value", "type": "uint256" }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function",
+    "name": "transfer",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }]
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "from", "type": "address" },
+      { "internalType": "address", "name": "to", "type": "address" },
+      { "internalType": "uint256", "name": "value", "type": "uint256" }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function",
+    "name": "transferFrom",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }]
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "newOwner", "type": "address" }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function",
+    "name": "transferOwnership"
+  },
+  {
+    "inputs": [
+      { "internalType": "string", "name": "holder", "type": "string" },
+      { "internalType": "uint256", "name": "amount", "type": "uint256" },
+      { "internalType": "string", "name": "externalId", "type": "string" }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function",
+    "name": "updateHolder"
+  },
+  {
+    "inputs": [
+      { "internalType": "string[]", "name": "holders", "type": "string[]" },
+      { "internalType": "uint256[]", "name": "amounts", "type": "uint256[]" },
+      { "internalType": "string[]", "name": "externalIds", "type": "string[]" }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function",
+    "name": "updateMultipleHolders"
+  }
+]

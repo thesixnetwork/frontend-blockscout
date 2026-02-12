@@ -24,6 +24,8 @@ import sortEntityTags from 'ui/shared/EntityTags/sortEntityTags';
 import IconSvg from 'ui/shared/IconSvg';
 import NetworkExplorers from 'ui/shared/NetworkExplorers';
 import PageTitle from 'ui/shared/Page/PageTitle';
+import CreateRWANoteButton from 'ui/token/CreateRWANoteButton';
+import RWANoteDisplay from 'ui/token/RWANoteDisplay';
 
 import TokenVerifiedInfo from './TokenVerifiedInfo';
 
@@ -40,17 +42,17 @@ const TokenPageTitle = ({ tokenQuery, addressQuery, verifiedInfoQuery, hash }: P
   const multichainContext = useMultichainContext();
   const addressHash = !tokenQuery.isPlaceholderData ? (tokenQuery.data?.address_hash || '') : '';
 
-  const addressesForMetadataQuery = React.useMemo(() => ([ hash ].filter(Boolean)), [ hash ]);
+  const addressesForMetadataQuery = React.useMemo(() => ([hash].filter(Boolean)), [hash]);
   const addressMetadataQuery = useAddressMetadataInfoQuery(addressesForMetadataQuery);
 
   const isLoading = tokenQuery.isPlaceholderData ||
     addressQuery.isPlaceholderData ||
     (config.features.verifiedTokens.isEnabled && verifiedInfoQuery.isPending);
 
-  const tokenSymbolText = tokenQuery.data?.symbol ? ` (${ tokenQuery.data.symbol })` : '';
+  const tokenSymbolText = tokenQuery.data?.symbol ? ` (${tokenQuery.data.symbol})` : '';
 
-  const [ bridgedTokenTagBgColor ] = useToken('colors', 'blue.500');
-  const [ bridgedTokenTagTextColor ] = useToken('colors', 'white');
+  const [bridgedTokenTagBgColor] = useToken('colors', 'blue.500');
+  const [bridgedTokenTagTextColor] = useToken('colors', 'white');
 
   const tags: Array<EntityTag> = React.useMemo(() => {
     return [
@@ -87,39 +89,41 @@ const TokenPageTitle = ({ tokenQuery, addressQuery, verifiedInfoQuery, hash }: P
 
   const contentAfter = (
     <>
-      { tokenQuery.data && <TokenEntity.Reputation value={ tokenQuery.data.reputation } ml={ 0 }/> }
-      { verifiedInfoQuery.data?.tokenAddress && (
-        <Tooltip content={ `Information on this token has been verified by ${ config.chain.name }` }>
-          <IconSvg name="certified" color="green.500" boxSize={ 6 } cursor="pointer"/>
+      {tokenQuery.data && <TokenEntity.Reputation value={tokenQuery.data.reputation} ml={0} />}
+      {verifiedInfoQuery.data?.tokenAddress && (
+        <Tooltip content={`Information on this token has been verified by ${config.chain.name}`}>
+          <IconSvg name="certified" color="green.500" boxSize={6} cursor="pointer" />
         </Tooltip>
-      ) }
+      )}
       <EntityTags
-        isLoading={ isLoading || (config.features.addressMetadata.isEnabled && addressMetadataQuery.isPending) }
-        tags={ tags }
-        addressHash={ addressQuery.data?.hash }
-        flexGrow={ 1 }
+        isLoading={isLoading || (config.features.addressMetadata.isEnabled && addressMetadataQuery.isPending)}
+        tags={tags}
+        addressHash={addressQuery.data?.hash}
+        flexGrow={1}
       />
     </>
   );
 
   const secondRow = (
-    <Flex alignItems="center" w="100%" minW={ 0 } columnGap={ 2 } rowGap={ 2 } flexWrap={{ base: 'wrap', lg: 'nowrap' }}>
-      { addressQuery.data && (
+    <Flex alignItems="center" w="100%" minW={0} columnGap={2} rowGap={2} flexWrap={{ base: 'wrap', lg: 'nowrap' }}>
+      {addressQuery.data && (
         <AddressEntity
           address={{ ...addressQuery.data, name: '' }}
-          isLoading={ isLoading }
+          isLoading={isLoading}
           variant="subheading"
-          icon={ multichainContext?.chain ? {
+          icon={multichainContext?.chain ? {
             shield: { name: 'pie_chart', isLoading },
-          } : undefined }
+          } : undefined}
         />
-      ) }
-      { !isLoading && tokenQuery.data && <AddressAddToWallet token={ tokenQuery.data } variant="button"/> }
-      { addressQuery.data && <AddressQrCode hash={ addressQuery.data.hash } isLoading={ isLoading }/> }
-      <AccountActionsMenu isLoading={ isLoading }/>
-      <Flex ml={{ base: 0, lg: 'auto' }} columnGap={ 2 } flexGrow={{ base: 1, lg: 0 }}>
-        <TokenVerifiedInfo verifiedInfoQuery={ verifiedInfoQuery }/>
-        <NetworkExplorers type="token" pathParam={ addressHash } ml={{ base: 'auto', lg: 0 }}/>
+      )}
+      {!isLoading && tokenQuery.data && <AddressAddToWallet token={tokenQuery.data} variant="button" />}
+      {addressQuery.data && <AddressQrCode hash={addressQuery.data.hash} isLoading={isLoading} />}
+      <AccountActionsMenu isLoading={isLoading} />
+      {!isLoading && tokenQuery.data && <CreateRWANoteButton token={tokenQuery.data} isLoading={isLoading} />}
+
+      <Flex ml={{ base: 0, lg: 'auto' }} columnGap={2} flexGrow={{ base: 1, lg: 0 }}>
+        <TokenVerifiedInfo verifiedInfoQuery={verifiedInfoQuery} />
+        <NetworkExplorers type="token" pathParam={addressHash} ml={{ base: 'auto', lg: 0 }} />
       </Flex>
     </Flex>
   );
@@ -127,25 +131,28 @@ const TokenPageTitle = ({ tokenQuery, addressQuery, verifiedInfoQuery, hash }: P
   return (
     <>
       <PageTitle
-        title={ `${ tokenQuery.data?.name || 'Unnamed token' }${ tokenSymbolText }` }
-        isLoading={ tokenQuery.isPlaceholderData }
-        beforeTitle={ tokenQuery.data ? (
+        title={`${tokenQuery.data?.name || 'Unnamed token'}${tokenSymbolText}`}
+        isLoading={tokenQuery.isPlaceholderData}
+        beforeTitle={tokenQuery.data ? (
           <TokenEntity.Icon
-            token={ tokenQuery.data }
-            isLoading={ tokenQuery.isPlaceholderData }
+            token={tokenQuery.data}
+            isLoading={tokenQuery.isPlaceholderData}
             variant="heading"
-            chain={ multichainContext?.chain }
+            chain={multichainContext?.chain}
           />
-        ) : null }
-        contentAfter={ contentAfter }
-        secondRow={ secondRow }
+        ) : null}
+        contentAfter={contentAfter}
+        secondRow={secondRow}
       />
-      { !addressMetadataQuery.isPending && (
+      {!addressMetadataQuery.isPending && (
         <AddressAlerts
-          tags={ addressMetadataQuery.data?.addresses?.[hash.toLowerCase()]?.tags }
-          isScamToken={ tokenQuery.data?.reputation === 'scam' }
+          tags={addressMetadataQuery.data?.addresses?.[hash.toLowerCase()]?.tags}
+          isScamToken={tokenQuery.data?.reputation === 'scam'}
         />
-      ) }
+      )}
+      {!isLoading && tokenQuery.data && (
+        <RWANoteDisplay tokenAddress={tokenQuery.data.address_hash} />
+      )}
     </>
   );
 };
