@@ -34,10 +34,11 @@ const Tokens = ({ query, onSortChange, sort, actionBar, description, hasActiveFi
         { description }
         { data.items.map((item, index) => {
           const chainIds = 'chain_infos' in item ? Object.keys(item.chain_infos).join(',') : undefined;
+          const itemKey = (item.address_hash || (item as any).address) + (isPlaceholderData ? index : '') + (chainIds ? chainIds : '');
 
           return (
             <TokensListItem
-              key={ item.address_hash + (isPlaceholderData ? index : '') + (chainIds ? chainIds : '') }
+              key={ itemKey }
               token={ item }
               index={ index }
               page={ pagination.page }

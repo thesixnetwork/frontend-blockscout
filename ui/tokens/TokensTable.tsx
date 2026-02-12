@@ -94,10 +94,11 @@ const TokensTable = ({ items, page, isLoading, sorting, setSorting, top }: Props
       <TableBody>
         { items.map((item, index) => {
           const chainIds = 'chain_infos' in item ? Object.keys(item.chain_infos).join(',') : undefined;
+          const itemKey = (item.address_hash || (item as any).address) + (isLoading ? index : '') + (chainIds ? chainIds : '');
 
           return (
             <TokensTableItem
-              key={ item.address_hash + (isLoading ? index : '') + (chainIds ? chainIds : '') }
+              key={ itemKey }
               token={ item }
               index={ index }
               page={ page }

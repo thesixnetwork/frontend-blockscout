@@ -43,6 +43,10 @@ const TokensTableItem = ({
     circulating_market_cap: marketCap,
   } = token;
 
+  // Fix: Handle API response with different field names
+  const actualAddressHash = addressHash || (token as any).address;
+  const actualHoldersCount = holdersCount || (token as any).holders;
+
   const filecoinRobustAddress = 'filecoin_robust_address' in token ? token.filecoin_robust_address : undefined;
   const originalChainId = 'origin_chain_id' in token ? token.origin_chain_id : undefined;
   const chainInfos = 'chain_infos' in token ? token.chain_infos : undefined;
@@ -52,7 +56,7 @@ const TokensTableItem = ({
     undefined;
 
   const tokenAddress: AddressEntityProps['address'] = {
-    hash: addressHash,
+    hash: actualAddressHash,
     filecoin: {
       robust: filecoinRobustAddress,
     },
@@ -145,7 +149,7 @@ const TokensTableItem = ({
           loading={ isLoading }
           display="inline-block"
         >
-          { Number(holdersCount).toLocaleString() }
+          { Number(actualHoldersCount).toLocaleString() }
         </Skeleton>
       </TableCell>
     </TableRow>

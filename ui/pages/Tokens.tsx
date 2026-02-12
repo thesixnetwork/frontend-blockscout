@@ -75,6 +75,7 @@ const Tokens = () => {
     },
   });
 
+
   const handleSearchTermChange = React.useCallback((value: string) => {
     tab === 'bridged' ?
       tokensQuery.onFilterChange({ q: value, chain_ids: bridgeChains }) :

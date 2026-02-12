@@ -42,6 +42,10 @@ const TokensListItem = ({
     circulating_market_cap: marketCap,
   } = token;
 
+  // Fix: Handle API response with different field names
+  const actualAddressHash = addressHash || (token as any).address;
+  const actualHoldersCount = holdersCount || (token as any).holders;
+
   const originalChainId = 'origin_chain_id' in token ? token.origin_chain_id : undefined;
   const chainInfos = 'chain_infos' in token ? token.chain_infos : undefined;
 
@@ -89,7 +93,7 @@ const TokensListItem = ({
       </Grid>
       <Flex justifyContent="space-between" alignItems="center" width="150px" ml={ 7 } mt={ -2 }>
         <AddressEntity
-          address={{ hash: addressHash, filecoin: { robust: filecoinRobustAddress } }}
+          address={{ hash: actualAddressHash, filecoin: { robust: filecoinRobustAddress } }}
           isLoading={ isLoading }
           truncation="constant"
           link={{ variant: 'secondary' }}
@@ -125,7 +129,7 @@ const TokensListItem = ({
       ) }
       <HStack gap={ 3 }>
         <Skeleton loading={ isLoading } textStyle="sm" fontWeight={ 500 }>Holders</Skeleton>
-        <Skeleton loading={ isLoading } textStyle="sm" color="text.secondary"><span>{ Number(holdersCount).toLocaleString() }</span></Skeleton>
+        <Skeleton loading={ isLoading } textStyle="sm" color="text.secondary"><span>{ Number(actualHoldersCount).toLocaleString() }</span></Skeleton>
       </HStack>
     </ListItemMobile>
   );
