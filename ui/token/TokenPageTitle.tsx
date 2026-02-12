@@ -150,8 +150,8 @@ const TokenPageTitle = ({ tokenQuery, addressQuery, verifiedInfoQuery, hash }: P
           isScamToken={tokenQuery.data?.reputation === 'scam'}
         />
       )}
-      {!isLoading && tokenQuery.data && (
-        <RWANoteDisplay tokenAddress={tokenQuery.data.address_hash} />
+      {!isLoading && hash && (
+        <RWANoteDisplay tokenAddress={hash} />
       )}
     </>
   );
