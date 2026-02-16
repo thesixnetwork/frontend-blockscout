@@ -220,7 +220,7 @@ const VerifiedAddresses = () => {
       </DataListDisplay>
       { addButton }
       <AddressVerificationModal
-        pageType={ PAGE_TYPE_DICT['/account/verified-addresses'] }
+        pageType={ PAGE_TYPE_DICT['/account/verified-addresses'] || 'Verified addresses' }
         open={ modalProps.open }
         onOpenChange={ modalProps.onOpenChange }
         onSubmit={ handleAddressSubmit }

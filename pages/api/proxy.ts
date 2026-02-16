@@ -20,7 +20,7 @@ const handler = async(nextReq: NextApiRequest, nextRes: NextApiResponse) => {
 
   // Hardcoded to point to Docker backend on localhost:4000
   const backendEndpoint = 'http://localhost:4000';
-  
+
   const url = new URL(
     nextReq.url.replace(/^\/node-api\/proxy/, ''),
     nextReq.headers['x-endpoint']?.toString() || backendEndpoint || appConfig.apis.general?.endpoint,

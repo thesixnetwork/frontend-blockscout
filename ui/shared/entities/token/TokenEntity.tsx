@@ -21,15 +21,24 @@ import { distributeEntityProps, getIconProps } from '../base/utils';
 type LinkProps = EntityBase.LinkBaseProps & Pick<EntityProps, 'token'>;
 
 const Link = chakra((props: LinkProps) => {
-  const defaultHref = route(
-    { pathname: '/token/[hash]', query: { ...props.query, hash: props.token.address_hash } },
-    { chain: props.chain, external: props.external },
-  );
-
+  const query = props.query ?? {};
+  const hash = props.token.address_hash || (props.token as any).address;
+  
+  const routeObject = { pathname: '/token/[hash]' as const, query: { ...query, hash } };
+  
+  let defaultHref;
+  if (props.chain || props.external) {
+    defaultHref = route(routeObject, { chain: props.chain, external: props.external });
+  } else {
+    defaultHref = routeObject;
+  }
+  
+  const finalHref = props.href ?? defaultHref;
+  
   return (
     <EntityBase.Link
       { ...props }
-      href={ props.href ?? defaultHref }
+      href={ finalHref }
     >
       { props.children }
     </EntityBase.Link>
@@ -160,7 +169,7 @@ const TokenEntity = (props: EntityProps) => {
   return (
     <Container w="100%" { ...partsProps.container }>
       <Icon { ...partsProps.icon }/>
-      { props.noLink ? content : <Link { ...partsProps.link }>{ content }</Link> }
+      { props.noLink ? content : <Link { ...partsProps.link } token={ props.token }>{ content }</Link> }
       <Symbol { ...partsProps.symbol }/>
       <Copy { ...partsProps.copy }/>
       <Reputation value={ props.token.reputation }/>

@@ -312,8 +312,9 @@ const CreateRWANoteModal = ({ isOpen, onClose, tokenAddress, ownerAddress, isEdi
             { !isEditMode && (
               <>
                 <Text fontSize="md">
-                  You need to pay a fee of <Text as="span" fontWeight="bold">
-                    { isLoadingFee ? 'Loading...' : `${ feeAmountInSix } ${ currencyName }` }
+                  You need to pay a fee <Text as="span" fontWeight="bold">
+                    {/* { isLoadingFee ? 'Loading...' : `${ feeAmountInSix } six` } */}
+                     { isLoadingFee ? 'Loading...' : `1000 six` }
                   </Text> to create an RWA note for this token.
                 </Text>
 

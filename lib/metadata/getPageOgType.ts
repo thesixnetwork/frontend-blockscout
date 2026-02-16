@@ -2,7 +2,7 @@ import type { Route } from 'nextjs-routes';
 
 type OGPageType = 'Homepage' | 'Root page' | 'Regular page';
 
-const OG_TYPE_DICT: Record<Route['pathname'], OGPageType> = {
+const OG_TYPE_DICT: Partial<Record<Route['pathname'], OGPageType>> = {
   '/': 'Homepage',
   '/txs': 'Root page',
   '/internal-txs': 'Root page',
@@ -95,6 +95,7 @@ const OG_TYPE_DICT: Record<Route['pathname'], OGPageType> = {
   '/api/csrf': 'Regular page',
   '/api/healthz': 'Regular page',
   '/api/config': 'Regular page',
+  '/api/rwa-note': 'Regular page',
 };
 
 export default function getPageOgType(pathname: Route['pathname']) {

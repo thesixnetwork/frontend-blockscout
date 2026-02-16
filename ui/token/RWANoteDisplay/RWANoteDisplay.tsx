@@ -22,7 +22,7 @@ interface Props {
 
 async function fetchRWANote(tokenAddress: string): Promise<RWANoteData | null> {
   try {
-    const response = await fetch(`/api/rwa-note-proxy?endpoint=/rwa-notes/by-contract/${tokenAddress}`);
+    const response = await fetch(`/api/rwa-note?endpoint=/rwa-notes/by-contract/${tokenAddress}`);
     
     if (response.status === 404) {
       return null; // No note exists

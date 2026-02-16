@@ -107,7 +107,7 @@ const PrivateAddressTags = () => {
       <AddressModal
         { ...addressModalProps }
         data={ addressModalData }
-        pageType={ PAGE_TYPE_DICT['/account/tag-address'] }
+        pageType={ PAGE_TYPE_DICT['/account/tag-address'] || 'Private tags' }
         onOpenChange={ onAddressModalOpenChange }
         onSuccess={ onAddOrEditSuccess }
       />

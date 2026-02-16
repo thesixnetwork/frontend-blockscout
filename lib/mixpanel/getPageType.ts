@@ -1,6 +1,6 @@
 import type { Route } from 'nextjs-routes';
 
-export const PAGE_TYPE_DICT: Record<Route['pathname'], string> = {
+export const PAGE_TYPE_DICT: Partial<Record<Route['pathname'], string>> = {
   '/': 'Homepage',
   '/txs': 'Transactions',
   '/internal-txs': 'Internal transactions',
@@ -93,6 +93,7 @@ export const PAGE_TYPE_DICT: Record<Route['pathname'], string> = {
   '/api/csrf': 'Node API: CSRF token',
   '/api/healthz': 'Node API: Health check',
   '/api/config': 'Node API: App config',
+  '/api/rwa-note': 'Node API: RWA note',
 };
 
 export default function getPageType(pathname: Route['pathname']) {

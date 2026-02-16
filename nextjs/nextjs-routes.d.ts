@@ -26,6 +26,7 @@ declare module "nextjs-routes" {
     | StaticRoute<"/api/monitoring/invalid-api-schema">
     | StaticRoute<"/api/proxy">
     | StaticRoute<"/api/rwa-note-proxy">
+    | StaticRoute<"/api/rwa-note">
     | DynamicRoute<"/api/tokens/[hash]/instances/[id]/media-type", { "hash": string; "id": string }>
     | StaticRoute<"/api-docs">
     | DynamicRoute<"/apps/[id]", { "id": string }>

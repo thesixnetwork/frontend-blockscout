@@ -24,7 +24,7 @@ const TransactionModal: React.FC<Props> = ({ open, onOpenChange, onSuccess, data
   React.useEffect(() => {
     open && !data?.id && mixpanel.logEvent(
       mixpanel.EventTypes.PRIVATE_TAG,
-      { Action: 'Form opened', 'Page type': PAGE_TYPE_DICT['/account/tag-address'], 'Tag type': 'Tx' },
+      { Action: 'Form opened', 'Page type': PAGE_TYPE_DICT['/account/tag-address'] || 'Private tags', 'Tag type': 'Tx' },
     );
   }, [ data?.id, open ]);
 
@@ -33,7 +33,7 @@ const TransactionModal: React.FC<Props> = ({ open, onOpenChange, onSuccess, data
     if (!data?.id) {
       mixpanel.logEvent(
         mixpanel.EventTypes.PRIVATE_TAG,
-        { Action: 'Submit', 'Page type': PAGE_TYPE_DICT['/account/tag-address'], 'Tag type': 'Tx' },
+        { Action: 'Submit', 'Page type': PAGE_TYPE_DICT['/account/tag-address'] || 'Private tags', 'Tag type': 'Tx' },
       );
     }
   }, [ data?.id, onSuccess ]);

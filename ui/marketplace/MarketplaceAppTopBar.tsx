@@ -38,7 +38,7 @@ const MarketplaceAppTopBar = ({ appId, data, isLoading }: Props) => {
   }, [ appProps.referrer ]);
 
   const handleBackToClick = React.useCallback(() => {
-    mixpanel.logEvent(mixpanel.EventTypes.BUTTON_CLICK, { Content: 'Back to', Source: mixpanel.PAGE_TYPE_DICT['/apps/[id]'] });
+    mixpanel.logEvent(mixpanel.EventTypes.BUTTON_CLICK, { Content: 'Back to', Source: mixpanel.PAGE_TYPE_DICT['/apps/[id]'] || 'DApp' });
   }, []);
 
   return (

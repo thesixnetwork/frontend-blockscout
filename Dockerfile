@@ -98,7 +98,8 @@ RUN set -a && \
 # ENV NEXT_TELEMETRY_DISABLED 1
 
 # Build app for production
-ENV NODE_OPTIONS="--max-old-space-size=4096"
+# Increase memory limit and enable more aggressive garbage collection
+ENV NODE_OPTIONS="--max-old-space-size=6144 --expose-gc"
 RUN yarn build
 
 

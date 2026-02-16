@@ -5,7 +5,7 @@ import type { Route } from 'nextjs-routes';
 const DEFAULT_TEMPLATE = 'Open-source block explorer by Blockscout. Search transactions, verify smart contracts, analyze addresses, and track network activity. Complete blockchain data and APIs for the %network_title% network.';
 
 // FIXME all page descriptions will be updated later
-const TEMPLATE_MAP: Record<Route['pathname'], string> = {
+const TEMPLATE_MAP: Partial<Record<Route['pathname'], string>> = {
   '/': DEFAULT_TEMPLATE,
   '/txs': DEFAULT_TEMPLATE,
   '/internal-txs': DEFAULT_TEMPLATE,
@@ -98,6 +98,7 @@ const TEMPLATE_MAP: Record<Route['pathname'], string> = {
   '/api/csrf': DEFAULT_TEMPLATE,
   '/api/healthz': DEFAULT_TEMPLATE,
   '/api/config': DEFAULT_TEMPLATE,
+  '/api/rwa-note': DEFAULT_TEMPLATE,
 };
 
 const TEMPLATE_MAP_ENHANCED: Partial<Record<Route['pathname'], string>> = {

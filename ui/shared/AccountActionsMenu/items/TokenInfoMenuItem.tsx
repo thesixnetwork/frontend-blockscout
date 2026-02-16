@@ -101,7 +101,7 @@ const TokenInfoMenuItem = ({ hash, type }: ItemProps) => {
       { element }
       <AddressVerificationModal
         defaultAddress={ hash }
-        pageType={ PAGE_TYPE_DICT['/token/[hash]'] }
+        pageType={ PAGE_TYPE_DICT['/token/[hash]'] || 'Token details' }
         open={ modal.open }
         onOpenChange={ modal.onOpenChange }
         onSubmit={ handleVerifiedAddressSubmit }
