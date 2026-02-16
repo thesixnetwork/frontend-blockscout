@@ -6,10 +6,23 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,
 ) {
+  // Add CORS headers to ensure the route is accessible
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   const { endpoint } = req.query;
 
   if (!endpoint || typeof endpoint !== 'string') {
-    return res.status(400).json({ error: 'Missing endpoint parameter' });
+    return res.status(400).json({ 
+      error: 'Missing endpoint parameter',
+      hint: 'This is the RWA Note Proxy API route. Expected query parameter: endpoint',
+    });
   }
 
   try {
@@ -55,3 +68,13 @@ export default async function handler(
     });
   }
 }
+
+// Disable body parsing to handle all request types
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '10mb',
+    },
+    externalResolver: true,
+  },
+};

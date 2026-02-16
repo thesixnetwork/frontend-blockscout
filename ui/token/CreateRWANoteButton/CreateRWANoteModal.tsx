@@ -246,7 +246,7 @@ const CreateRWANoteModal = ({ isOpen, onClose, tokenAddress, ownerAddress, isEdi
           note: note.trim(),
         };
 
-      const response = await fetch(`/api/rwa-note-proxy?endpoint=${ encodeURIComponent(endpoint) }`, {
+      const response = await fetch(`/node-api/rwa-note?endpoint=${ encodeURIComponent(endpoint) }`, {
         method,
         headers: {
           'Content-Type': 'application/json',
@@ -282,7 +282,6 @@ const CreateRWANoteModal = ({ isOpen, onClose, tokenAddress, ownerAddress, isEdi
   const feeAmountInSix = feeAmount ? Number(feeAmount) / 1e18 : 0;
   const zeroAddress = '0x0000000000000000000000000000000000000000';
   const isZeroAddress = !sixTokenAddress || sixTokenAddress === zeroAddress;
-  const currencyName = isZeroAddress ? 'Native currency' : 'SIX tokens';
 
   const handleDialogChange = React.useCallback((details: { open: boolean }) => {
     if (!details.open && !isSubmitting) {
@@ -313,8 +312,7 @@ const CreateRWANoteModal = ({ isOpen, onClose, tokenAddress, ownerAddress, isEdi
               <>
                 <Text fontSize="md">
                   You need to pay a fee <Text as="span" fontWeight="bold">
-                    {/* { isLoadingFee ? 'Loading...' : `${ feeAmountInSix } six` } */}
-                     { isLoadingFee ? 'Loading...' : `1000 six` }
+                    { isLoadingFee ? 'Loading...' : `${ feeAmountInSix } six` }
                   </Text> to create an RWA note for this token.
                 </Text>
 
@@ -396,14 +394,6 @@ const CreateRWANoteModal = ({ isOpen, onClose, tokenAddress, ownerAddress, isEdi
         </DialogBody>
 
         <DialogFooter>
-          { /* <Button
-            variant="outline"
-            onClick={ handleClose }
-            disabled={ isSubmitting }
-          >
-            Close
-          </Button> */ }
-
           <Button
             colorScheme="blue"
             onClick={ handlePayFee }
