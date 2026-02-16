@@ -23,18 +23,14 @@ type LinkProps = EntityBase.LinkBaseProps & Pick<EntityProps, 'token'>;
 const Link = chakra((props: LinkProps) => {
   const query = props.query ?? {};
   const hash = props.token.address_hash || (props.token as any).address;
-  
+
   const routeObject = { pathname: '/token/[hash]' as const, query: { ...query, hash } };
-  
-  let defaultHref;
-  if (props.chain || props.external) {
-    defaultHref = route(routeObject, { chain: props.chain, external: props.external });
-  } else {
-    defaultHref = routeObject;
-  }
-  
+
+  // Always use the route() function to convert the route object to a string
+  const defaultHref = route(routeObject, { chain: props.chain, external: props.external });
+
   const finalHref = props.href ?? defaultHref;
-  
+
   return (
     <EntityBase.Link
       { ...props }
@@ -43,9 +39,7 @@ const Link = chakra((props: LinkProps) => {
       { props.children }
     </EntityBase.Link>
   );
-});
-
-type IconProps = Pick<EntityProps, 'token' | 'className'> & EntityBase.IconBaseProps;
+});type IconProps = Pick<EntityProps, 'token' | 'className'> & EntityBase.IconBaseProps;
 
 const Icon = (props: IconProps) => {
   if (props.noIcon) {

@@ -19,7 +19,7 @@ export default async function handler(
   const { endpoint } = req.query;
 
   if (!endpoint || typeof endpoint !== 'string') {
-    return res.status(400).json({ 
+    return res.status(400).json({
       error: 'Missing endpoint parameter',
       hint: 'This is the RWA Note Proxy API route. Expected query parameter: endpoint',
     });
