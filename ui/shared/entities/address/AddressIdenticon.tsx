@@ -76,6 +76,11 @@ const Icon = dynamic(
 type Props = IconProps;
 
 const AddressIdenticon = ({ size, hash }: Props) => {
+  // Guard against undefined or null hash values
+  if (!hash) {
+    return null;
+  }
+
   return (
     <Box boxSize={ `${ size }px` } borderRadius="full" overflow="hidden">
       <Icon size={ size } hash={ hash }/>

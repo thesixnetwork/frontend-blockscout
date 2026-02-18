@@ -11,10 +11,12 @@ import { useWriteContract, useReadContract } from 'wagmi';
 import config from 'configs/app';
 import wagmiConfig from 'lib/web3/wagmiConfig';
 import { Button } from 'toolkit/chakra/button';
+import { Checkbox } from 'toolkit/chakra/checkbox';
 import { DialogBody, DialogContent, DialogFooter, DialogHeader, DialogRoot, DialogTitle } from 'toolkit/chakra/dialog';
 import { Link } from 'toolkit/chakra/link';
 import { Textarea } from 'toolkit/chakra/textarea';
 import { toaster } from 'toolkit/chakra/toaster';
+import { Tooltip } from 'toolkit/chakra/tooltip';
 
 import rwaNoteAbi from '../../../ABI/rwa-create-note-abi.json';
 
@@ -36,7 +38,7 @@ const ERC20_ABI = [
       { name: 'amount', type: 'uint256' },
     ],
     name: 'approve',
-    outputs: [ { name: '', type: 'bool' } ],
+    outputs: [{ name: '', type: 'bool' }],
     stateMutability: 'nonpayable',
     type: 'function',
   },
@@ -66,10 +68,11 @@ interface Props {
 }
 
 const CreateRWANoteModal = ({ isOpen, onClose, tokenAddress, ownerAddress, isEditMode, existingNote }: Props) => {
-  const [ note, setNote ] = React.useState('');
-  const [ isSubmitting, setIsSubmitting ] = React.useState(false);
-  const [ txHash, setTxHash ] = React.useState<string | null>(null);
-  const [ approvalTxHash, setApprovalTxHash ] = React.useState<string | null>(null);
+  const [note, setNote] = React.useState('');
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [txHash, setTxHash] = React.useState<string | null>(null);
+  const [approvalTxHash, setApprovalTxHash] = React.useState<string | null>(null);
+  const [isComplianceConfirmed, setIsComplianceConfirmed] = React.useState(false);
 
   const queryClient = useQueryClient();
 
@@ -81,31 +84,33 @@ const CreateRWANoteModal = ({ isOpen, onClose, tokenAddress, ownerAddress, isEdi
       } else {
         setNote('');
       }
+      // Reset compliance checkbox when modal opens
+      setIsComplianceConfirmed(false);
     }
-  }, [ isOpen, isEditMode, existingNote ]);
+  }, [isOpen, isEditMode, existingNote]);
 
   const { writeContractAsync } = useWriteContract();
 
   // Read fee amount from contract
   const { data: feeAmount, isLoading: isLoadingFee } = useReadContract({
-    address: RWA_NOTE_CONTRACT_ADDRESS as `0x${ string }`,
+    address: RWA_NOTE_CONTRACT_ADDRESS as `0x${string}`,
     abi: rwaNoteAbi,
     functionName: 'feeAmount',
   });
 
   // Read SIX token address from contract
   const { data: sixTokenAddress } = useReadContract({
-    address: RWA_NOTE_CONTRACT_ADDRESS as `0x${ string }`,
+    address: RWA_NOTE_CONTRACT_ADDRESS as `0x${string}`,
     abi: rwaNoteAbi,
     functionName: 'sixToken',
   });
 
   // Check if token has already paid (for additional validation)
   const { data: tokenInfo } = useReadContract({
-    address: RWA_NOTE_CONTRACT_ADDRESS as `0x${ string }`,
+    address: RWA_NOTE_CONTRACT_ADDRESS as `0x${string}`,
     abi: rwaNoteAbi,
     functionName: 'tokenInfo',
-    args: [ tokenAddress as `0x${ string }` ],
+    args: [tokenAddress as `0x${string}`],
   }) as { data: TokenInfoData | undefined };
 
   const handleClose = React.useCallback(() => {
@@ -113,10 +118,11 @@ const CreateRWANoteModal = ({ isOpen, onClose, tokenAddress, ownerAddress, isEdi
     setTxHash(null);
     setApprovalTxHash(null);
     setIsSubmitting(false);
+    setIsComplianceConfirmed(false);
     onClose();
-  }, [ onClose ]);
+  }, [onClose]);
 
-  const handlePayFee = async() => {
+  const handlePayFee = async () => {
     if (!note.trim()) {
       toaster.error({
         title: 'Error',
@@ -153,11 +159,11 @@ const CreateRWANoteModal = ({ isOpen, onClose, tokenAddress, ownerAddress, isEdi
           // Call payFeeForToken with value (native currency)
           // TokenType: 1 = ERC20, 2 = ERC721
           const hash = await writeContractAsync({
-            address: RWA_NOTE_CONTRACT_ADDRESS as `0x${ string }`,
+            address: RWA_NOTE_CONTRACT_ADDRESS as `0x${string}`,
             abi: rwaNoteAbi,
             functionName: 'payFeeForToken',
             args: [
-              tokenAddress as `0x${ string }`,
+              tokenAddress as `0x${string}`,
               TOKEN_TYPE.ERC20, // Pass as number: 1
             ],
             value: feeAmount as bigint, // Pay with native currency
@@ -175,17 +181,17 @@ const CreateRWANoteModal = ({ isOpen, onClose, tokenAddress, ownerAddress, isEdi
             throw new Error('Transaction reverted');
           }
         } else {
-        // Contract uses ERC20 SIX tokens - need approval first
+          // Contract uses ERC20 SIX tokens - need approval first
           toaster.info({
             title: 'Approval Required',
             description: 'Please approve the contract to spend your SIX tokens...',
           });
 
           const approvalHash = await writeContractAsync({
-            address: sixTokenAddress as `0x${ string }`,
+            address: sixTokenAddress as `0x${string}`,
             abi: ERC20_ABI,
             functionName: 'approve',
-            args: [ RWA_NOTE_CONTRACT_ADDRESS as `0x${ string }`, feeAmount as bigint ],
+            args: [RWA_NOTE_CONTRACT_ADDRESS as `0x${string}`, feeAmount as bigint],
           });
 
           setApprovalTxHash(approvalHash);
@@ -208,14 +214,14 @@ const CreateRWANoteModal = ({ isOpen, onClose, tokenAddress, ownerAddress, isEdi
           // Call payFeeForToken function (NO value needed, contract will transferFrom)
           // TokenType: 1 = ERC20, 2 = ERC721
           const hash = await writeContractAsync({
-            address: RWA_NOTE_CONTRACT_ADDRESS as `0x${ string }`,
+            address: RWA_NOTE_CONTRACT_ADDRESS as `0x${string}`,
             abi: rwaNoteAbi,
             functionName: 'payFeeForToken',
             args: [
-              tokenAddress as `0x${ string }`,
+              tokenAddress as `0x${string}`,
               TOKEN_TYPE.ERC20, // Pass as number: 1
             ],
-          // NO value field - the contract will pull SIX tokens via transferFrom
+            // NO value field - the contract will pull SIX tokens via transferFrom
           });
 
           setTxHash(hash);
@@ -235,7 +241,7 @@ const CreateRWANoteModal = ({ isOpen, onClose, tokenAddress, ownerAddress, isEdi
       // Call backend API to create or update note via Next.js proxy
 
       const endpoint = isEditMode && existingNote ?
-        `/rwa-notes/${ existingNote._id }` :
+        `/rwa-notes/${existingNote._id}` :
         '/rwa-notes';
       const method = isEditMode ? 'PATCH' : 'POST';
       const body = isEditMode ?
@@ -246,7 +252,7 @@ const CreateRWANoteModal = ({ isOpen, onClose, tokenAddress, ownerAddress, isEdi
           note: note.trim(),
         };
 
-      const response = await fetch(`/node-api/rwa-note?endpoint=${ encodeURIComponent(endpoint) }`, {
+      const response = await fetch(`/node-api/rwa-note?endpoint=${encodeURIComponent(endpoint)}`, {
         method,
         headers: {
           'Content-Type': 'application/json',
@@ -261,18 +267,18 @@ const CreateRWANoteModal = ({ isOpen, onClose, tokenAddress, ownerAddress, isEdi
         });
 
         // Invalidate queries to refetch the note data without reloading the page
-        await queryClient.invalidateQueries({ queryKey: [ 'rwa-note', tokenAddress ] });
-        await queryClient.invalidateQueries({ queryKey: [ 'rwa-note-exists', tokenAddress ] });
+        await queryClient.invalidateQueries({ queryKey: ['rwa-note', tokenAddress] });
+        await queryClient.invalidateQueries({ queryKey: ['rwa-note-exists', tokenAddress] });
 
         handleClose();
       } else {
         const errorData = await response.json() as { message?: string };
-        throw new Error(errorData.message || `Failed to ${ isEditMode ? 'update' : 'create' } note`);
+        throw new Error(errorData.message || `Failed to ${isEditMode ? 'update' : 'create'} note`);
       }
     } catch (error) {
       toaster.error({
         title: 'Error',
-        description: (error as Error)?.message || `Failed to ${ isEditMode ? 'update' : 'create' } RWA note`,
+        description: (error as Error)?.message || `Failed to ${isEditMode ? 'update' : 'create'} RWA note`,
       });
     } finally {
       setIsSubmitting(false);
@@ -287,121 +293,144 @@ const CreateRWANoteModal = ({ isOpen, onClose, tokenAddress, ownerAddress, isEdi
     if (!details.open && !isSubmitting) {
       handleClose();
     }
-  }, [ isSubmitting, handleClose ]);
+  }, [isSubmitting, handleClose]);
 
   const handleNoteChange = React.useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setNote(e.target.value);
   }, []);
 
-  const isButtonDisabled = !note.trim() || (!isEditMode && isLoadingFee);
+  const isButtonDisabled = !note.trim() || (!isEditMode && isLoadingFee) || (isEditMode && !isComplianceConfirmed) || (!isEditMode && !isComplianceConfirmed);
 
   return (
     <DialogRoot
-      open={ isOpen }
-      onOpenChange={ handleDialogChange }
+      open={isOpen}
+      onOpenChange={handleDialogChange}
       size="md"
     >
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{ isEditMode ? 'Edit' : 'Create' } RWA Note</DialogTitle>
+          <DialogTitle>{isEditMode ? 'Edit' : 'Register'} RWA Disclosure Statement</DialogTitle>
         </DialogHeader>
 
         <DialogBody>
-          <Flex direction="column" gap={ 4 }>
-            { !isEditMode && (
+          <Flex direction="column" gap={4}>
+            {!isEditMode && (
               <>
                 <Text fontSize="md">
-                  You need to pay a fee <Text as="span" fontWeight="bold">
-                    { isLoadingFee ? 'Loading...' : `${ feeAmountInSix } six` }
-                  </Text> to create an RWA note for this token.
+                  A registration fee of <Text as="span" fontWeight="bold">
+                    {isLoadingFee ? 'Loading...' : `${feeAmountInSix} SIX`}
+                  </Text> is required to publish an official RWA Disclosure Statement associated with this smart contract.
                 </Text>
 
-                { !isZeroAddress && (
+                {!isZeroAddress && (
                   <Text fontSize="sm" color="gray.500">
                     Note: You will need to approve two transactions:
-                    <br/>
+                    <br />
                     1. Approve the contract to spend your SIX tokens
-                    <br/>
+                    <br />
                     2. Pay the fee to create the note
                   </Text>
-                ) }
+                )}
               </>
-            ) }
-            { isEditMode && (
+            )}
+            {isEditMode && (
               <Text fontSize="md">
                 Update your RWA note. No payment required for edits.
               </Text>
-            ) }
+            )}
 
-            <Flex direction="column" gap={ 2 }>
+            <Flex direction="column" gap={2}>
               <Text fontSize="sm" fontWeight="medium">
-                Token Address:
+                Smart Contract Address:
               </Text>
               <Input
-                value={ tokenAddress }
+                value={tokenAddress}
                 readOnly
                 size="sm"
               />
             </Flex>
 
-            <Flex direction="column" gap={ 2 }>
+            <Flex direction="column" gap={2}>
               <Text fontSize="sm" fontWeight="medium">
-                Note:
+                RWA Disclosure Statement:
               </Text>
               <Textarea
-                placeholder="Enter your note about this RWA contract..."
-                value={ note }
-                onChange={ handleNoteChange }
+                placeholder="Provide a factual and structured disclosure describing the purpose of the smart contract, the nature of the underlying real-world asset, governance structure, and relevant compliance considerations. Marketing language and forward-looking performance claims are discouraged."
+                value={note}
+                onChange={handleNoteChange}
                 minH="120px"
-                disabled={ isSubmitting }
+                disabled={isSubmitting}
               />
             </Flex>
 
-            { approvalTxHash && (
-              <Flex direction="column" gap={ 2 }>
+            <Flex direction="column" gap={2} mt={4} >
+              <Checkbox
+                checked={isComplianceConfirmed}
+                onCheckedChange={(details) => setIsComplianceConfirmed(Boolean(details.checked))}
+                disabled={isSubmitting}
+              >
+                <Text fontSize="sm">
+                  I confirm that I am an authorized representative of this project and that the information provided is accurate, complete, and not misleading.
+                </Text>
+              </Checkbox>
+            </Flex>
+
+            {approvalTxHash && (
+              <Flex direction="column" gap={2}>
                 <Text fontSize="sm" fontWeight="medium">
                   Approval Transaction:
                 </Text>
                 <Link
-                  href={ `${ config.app.baseUrl }/tx/${ approvalTxHash }` }
+                  href={`${config.app.baseUrl}/tx/${approvalTxHash}`}
                   target="_blank"
                   color="blue.500"
                   fontSize="sm"
                   wordBreak="break-all"
                 >
-                  { approvalTxHash }
+                  {approvalTxHash}
                 </Link>
               </Flex>
-            ) }
+            )}
 
-            { txHash && (
-              <Flex direction="column" gap={ 2 }>
+            {txHash && (
+              <Flex direction="column" gap={2}>
                 <Text fontSize="sm" fontWeight="medium">
-                  Payment Transaction:
+                  Payment Transaction Reference:
                 </Text>
                 <Link
-                  href={ `${ config.app.baseUrl }/tx/${ txHash }` }
+                  href={`${config.app.baseUrl}/tx/${txHash}`}
                   target="_blank"
                   color="blue.500"
                   fontSize="sm"
                   wordBreak="break-all"
                 >
-                  { txHash }
+                  {txHash}
                 </Link>
               </Flex>
-            ) }
+            )}
           </Flex>
         </DialogBody>
 
         <DialogFooter>
-          <Button
-            colorScheme="blue"
-            onClick={ handlePayFee }
-            loading={ isSubmitting }
-            disabled={ isButtonDisabled }
+          <Tooltip
+            content={isButtonDisabled ? 'A disclosure statement and compliance confirmation is required before submission.' : ''}
+            disabled={!isButtonDisabled}
           >
-            { isEditMode ? 'Save Note' : 'Pay Fee & Create Note' }
-          </Button>
+            <Button
+              colorScheme="blue"
+              onClick={handlePayFee}
+              loading={isSubmitting}
+              disabled={isButtonDisabled}
+            >
+              {isSubmitting
+                ? 'Processing Registration…'
+                : isEditMode
+                  ? 'Save Note'
+                  : isButtonDisabled
+                    ? 'Disclosure & Compliance Required'
+                    : 'Confirm Registration & Publish Disclosure'}
+            </Button>
+          </Tooltip>
         </DialogFooter>
       </DialogContent>
     </DialogRoot>

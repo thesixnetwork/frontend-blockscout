@@ -112,7 +112,7 @@ const AuthModal = ({ initialScreen, onClose, mixpanelConfig, closeOnError }: Pro
   const header = (() => {
     switch (currentStep.type) {
       case 'select_method':
-        return 'Select a way to login';
+        return 'Select Authentication Method';
       case 'connect_wallet':
         return currentStep.isAuth ? 'Add wallet' : 'Continue with wallet';
       case 'email':
@@ -181,7 +181,7 @@ const AuthModal = ({ initialScreen, onClose, mixpanelConfig, closeOnError }: Pro
     <DialogRoot
       open
       onOpenChange={ onModalOpenChange }
-      size={{ lgDown: 'full', lg: 'sm' }}
+      size={{ lgDown: 'full', lg: 'md' }}
       // we need to allow user interact with element outside of dialog otherwise they can't click on recaptcha
       modal={ false }
       // FIXME if we allow to close on interact outside, the dialog will be closed when user click on recaptcha

@@ -30,7 +30,12 @@ const TokenInventoryItem = ({ item, token, isLoading }: Props) => {
     />
   );
 
-  const url = route({ pathname: '/token/[hash]/instance/[id]', query: { hash: token.address_hash, id: item.id } }, multichainContext);
+  // Ensure both hash and id are available before generating the URL
+  // Support both 'address' and 'address_hash' properties for token address
+  const tokenAddress = (token as any).address || token.address_hash;
+  const url = (tokenAddress && item.id) ? 
+    route({ pathname: '/token/[hash]/instance/[id]', query: { hash: tokenAddress, id: item.id } }, multichainContext) :
+    undefined;
 
   return (
     <Box

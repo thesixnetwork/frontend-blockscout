@@ -23,7 +23,7 @@ import AddressIdenticon from './AddressIdenticon';
 type LinkProps = EntityBase.LinkBaseProps & Pick<EntityProps, 'address'>;
 
 const getDisplayedAddress = (address: AddressProp, altHash?: string) => {
-  return address.filecoin?.robust ?? address.filecoin?.id ?? altHash ?? address.hash;
+  return address.filecoin?.robust ?? address.filecoin?.id ?? altHash ?? address.hash ?? '';
 };
 
 const Link = chakra((props: LinkProps) => {

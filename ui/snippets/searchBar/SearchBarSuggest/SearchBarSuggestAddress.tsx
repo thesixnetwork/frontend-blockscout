@@ -22,6 +22,11 @@ const SearchBarSuggestAddress = ({ data, isMobile, searchTerm, addressFormat }: 
   const hash = 'filecoin_robust_address' in data ? data.filecoin_robust_address ||
     (addressFormat === 'bech32' ? toBech32Address(data.address_hash) : data.address_hash) : data.address_hash;
 
+  // Guard against undefined or empty hash
+  if (!hash) {
+    return null;
+  }
+
   const isContract = (() => {
     if ('chain_infos' in data) {
       return contract.isContract(data);
