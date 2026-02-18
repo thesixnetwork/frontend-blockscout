@@ -299,7 +299,26 @@ const CreateRWANoteModal = ({ isOpen, onClose, tokenAddress, ownerAddress, isEdi
     setNote(e.target.value);
   }, []);
 
+  const handleComplianceChange = React.useCallback((details: { checked: boolean | 'indeterminate' }) => {
+    setIsComplianceConfirmed(Boolean(details.checked));
+  }, []);
+
   const isButtonDisabled = !note.trim() || (!isEditMode && isLoadingFee) || (isEditMode && !isComplianceConfirmed) || (!isEditMode && !isComplianceConfirmed);
+
+  let buttonLabel = '';
+  if (isSubmitting) {
+    buttonLabel = 'Processing Registration…';
+  } else if (isEditMode) {
+    buttonLabel = 'Save Note';
+  } else {
+    buttonLabel = isButtonDisabled
+      ? 'Disclosure & Compliance Required'
+      : 'Confirm Registration & Publish Disclosure';
+  }
+
+  const tooltipContent = isButtonDisabled
+    ? 'A disclosure statement and compliance confirmation is required before submission.'
+    : '';
 
   return (
     <DialogRoot
@@ -355,7 +374,11 @@ const CreateRWANoteModal = ({ isOpen, onClose, tokenAddress, ownerAddress, isEdi
                 RWA Disclosure Statement:
               </Text>
               <Textarea
-                placeholder="Provide a factual and structured disclosure describing the purpose of the smart contract, the nature of the underlying real-world asset, governance structure, and relevant compliance considerations. Marketing language and forward-looking performance claims are discouraged."
+                placeholder={
+                  'Provide a factual and structured disclosure describing the purpose, nature of'
+                  + ' the underlying real-world asset, governance structure, and compliance'
+                  + ' considerations.'
+                }
                 value={note}
                 onChange={handleNoteChange}
                 minH="120px"
@@ -366,11 +389,12 @@ const CreateRWANoteModal = ({ isOpen, onClose, tokenAddress, ownerAddress, isEdi
             <Flex direction="column" gap={2} mt={4} >
               <Checkbox
                 checked={isComplianceConfirmed}
-                onCheckedChange={(details) => setIsComplianceConfirmed(Boolean(details.checked))}
+                onCheckedChange={handleComplianceChange}
                 disabled={isSubmitting}
               >
                 <Text fontSize="sm">
-                  I confirm that I am an authorized representative of this project and that the information provided is accurate, complete, and not misleading.
+                  I confirm that I am an authorized representative of this project and that the
+                  information provided is accurate, complete, and not misleading.
                 </Text>
               </Checkbox>
             </Flex>
@@ -413,7 +437,7 @@ const CreateRWANoteModal = ({ isOpen, onClose, tokenAddress, ownerAddress, isEdi
 
         <DialogFooter>
           <Tooltip
-            content={isButtonDisabled ? 'A disclosure statement and compliance confirmation is required before submission.' : ''}
+            content={tooltipContent}
             disabled={!isButtonDisabled}
           >
             <Button
@@ -422,13 +446,7 @@ const CreateRWANoteModal = ({ isOpen, onClose, tokenAddress, ownerAddress, isEdi
               loading={isSubmitting}
               disabled={isButtonDisabled}
             >
-              {isSubmitting
-                ? 'Processing Registration…'
-                : isEditMode
-                  ? 'Save Note'
-                  : isButtonDisabled
-                    ? 'Disclosure & Compliance Required'
-                    : 'Confirm Registration & Publish Disclosure'}
+              {buttonLabel}
             </Button>
           </Tooltip>
         </DialogFooter>

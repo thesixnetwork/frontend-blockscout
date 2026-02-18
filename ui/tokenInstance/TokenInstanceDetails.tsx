@@ -28,7 +28,17 @@ interface Props {
 }
 
 const TokenInstanceDetails = ({ data, token, scrollRef, isLoading }: Props) => {
-  const appActionData = useAppActionData((token as any)?.address || token?.address_hash, !isLoading);
+  // Helper to get token address - supports both 'address' and 'address_hash' properties
+  const getTokenAddress = (tokenData?: TokenInfo): string => {
+    if (!tokenData) {
+      return '';
+    }
+    const tokenRecord = tokenData as unknown as Record<string, string>;
+    return tokenRecord.address || tokenData.address_hash || '';
+  };
+
+  const tokenAddress = getTokenAddress(token);
+  const appActionData = useAppActionData(tokenAddress, !isLoading);
   const isMounted = useIsMounted();
 
   const handleCounterItemClick = React.useCallback(() => {
@@ -66,7 +76,7 @@ const TokenInstanceDetails = ({ data, token, scrollRef, isLoading }: Props) => {
             </>
           ) }
 
-          <TokenInstanceCreatorAddress hash={ isLoading ? '' : ((token as any)?.address || token?.address_hash) }/>
+          <TokenInstanceCreatorAddress hash={ isLoading ? '' : tokenAddress }/>
 
           <DetailedInfo.ItemLabel
             hint="This token instance unique token ID"
@@ -83,11 +93,15 @@ const TokenInstanceDetails = ({ data, token, scrollRef, isLoading }: Props) => {
             </Flex>
           </DetailedInfo.ItemValue>
 
-          <TokenInstanceTransfersCount hash={ isLoading ? '' : ((token as any)?.address || token?.address_hash) } id={ isLoading ? '' : data.id } onClick={ handleCounterItemClick }/>
+          <TokenInstanceTransfersCount
+            hash={ isLoading ? '' : tokenAddress }
+            id={ isLoading ? '' : data.id }
+            onClick={ handleCounterItemClick }
+          />
 
           <TokenNftMarketplaces
             isLoading={ isLoading }
-            hash={ (token as any)?.address || token?.address_hash }
+            hash={ tokenAddress }
             id={ data.id }
             appActionData={ appActionData }
             source="NFT item"
