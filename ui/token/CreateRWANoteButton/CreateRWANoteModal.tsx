@@ -20,7 +20,7 @@ import { Tooltip } from 'toolkit/chakra/tooltip';
 
 import rwaNoteAbi from '../../../ABI/rwa-create-note-abi.json';
 
-const RWA_NOTE_CONTRACT_ADDRESS = '0x01824B8F5cC22Cab69B611C2b9Dee53494C368c6';
+const RWA_NOTE_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_RWA_NOTE_CONTRACT_ADDRESS || '0x867AA9D2885081849d6a08b3db67574975B7D7D7';
 
 // TokenType enum from smart contract: 0 = UNKNOWN, 1 = ERC20, 2 = ERC721
 // Must be passed as numbers to the contract

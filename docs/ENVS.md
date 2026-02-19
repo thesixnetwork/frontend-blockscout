@@ -55,6 +55,7 @@ All json-like values should be single-quoted. If it contains a hash (`#`) or a d
   - [Web3 wallet integration](#web3-wallet-integration-add-token-or-network-to-the-wallet) (add token or network to the wallet)
   - [Transaction interpretation](#transaction-interpretation)
   - [Verified tokens info](#verified-tokens-info)
+  - [RWA Note Smart Contract](#rwa-note-smart-contract)
   - [Name service integration](#name-service-integration)
   - [Clusters universal name service](#clusters-universal-name-service)
   - [Metadata service integration](#metadata-service-integration)
@@ -698,6 +699,16 @@ This feature is **enabled by default** with the `['metamask']` value. To switch 
 | Variable | Type| Description | Compulsoriness  | Default value | Example value | Version |
 | --- | --- | --- | --- | --- | --- | --- |
 | NEXT_PUBLIC_CONTRACT_INFO_API_HOST | `string` | Contract Info API endpoint url | Required | - | `https://contracts-info.services.blockscout.com` | v1.0.x+ |
+
+&nbsp;
+
+### RWA Note Smart Contract
+
+This feature enables Real-World Asset (RWA) disclosure statement management for token contracts.
+
+| Variable | Type| Description | Compulsoriness  | Default value | Example value | Version |
+| --- | --- | --- | --- | --- | --- | --- |
+| NEXT_PUBLIC_RWA_NOTE_CONTRACT_ADDRESS | `string` | Smart contract address for RWA Note feature | - | - | `0x867AA9D2885081849d6a08b3db67574975B7D7D7` | v2.4.0+ |
 
 &nbsp;
 
