@@ -71,7 +71,7 @@ const RWANoteDisplay = ({ tokenAddress }: Props) => {
       mb={4}
     >
       <Text fontSize="md">
-        <Text as="span" fontWeight="bold">RWA Note:</Text> {noteData.note}
+        <Text as="span" fontWeight="bold">RWA Disclosure :</Text> {noteData.note}
       </Text>
     </Box>
   );

@@ -46,7 +46,7 @@ const CreateRWANoteButton = ({ token, isLoading }: Props) => {
         && !isCheckingOwner 
         && !isCheckingNote;
 
-    const buttonText = hasNote ? 'Edit RWA Note' : 'Register RWA Disclosure';
+    const buttonText = hasNote ? 'Edit RWA Disclosure' : 'Register RWA Disclosure';
     const isEditMode = hasNote && Boolean(noteData);
 
     if (!shouldShowButton) {
