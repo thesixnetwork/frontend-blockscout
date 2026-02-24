@@ -39,16 +39,20 @@ const SearchBarSuggestItem = ({ data, isMobile, searchTerm, onClick, addressForm
     }
   }, [ data ]);
 
+  // Support both old backend ("address") and new backend ("address_hash")
+  const getAddressHash = (item: { address_hash: string; address?: string }) =>
+    item.address_hash || (item as { address?: string }).address || '';
+
   const url = (() => {
     switch (data.type) {
       case 'token': {
-        return route({ pathname: '/token/[hash]', query: { hash: data.address_hash } }, multichainContext);
+        return route({ pathname: '/token/[hash]', query: { hash: getAddressHash(data) } }, multichainContext);
       }
       case 'contract':
       case 'address':
       case 'label':
       case 'metadata_tag': {
-        return route({ pathname: '/address/[hash]', query: { hash: data.address_hash } });
+        return route({ pathname: '/address/[hash]', query: { hash: getAddressHash(data) } });
       }
       case 'transaction': {
         return route({ pathname: '/tx/[hash]', query: { hash: data.transaction_hash } }, multichainContext);
@@ -76,7 +80,7 @@ const SearchBarSuggestItem = ({ data, isMobile, searchTerm, onClick, addressForm
         return route({ pathname: '/name-services/domains/[name]', query: { name: data.ens_info.name } });
       }
       case 'cluster': {
-        return route({ pathname: '/address/[hash]', query: { hash: data.address_hash } });
+        return route({ pathname: '/address/[hash]', query: { hash: getAddressHash(data) } });
       }
       case 'tac_operation': {
         return route({ pathname: '/operation/[id]', query: { id: data.tac_operation.operation_id } });
@@ -144,7 +148,7 @@ const SearchBarSuggestItem = ({ data, isMobile, searchTerm, onClick, addressForm
     }
   })();
 
-  const hasLink = data.type === 'cluster' ? isEvmAddress(data.address_hash) : true;
+  const hasLink = data.type === 'cluster' ? isEvmAddress(getAddressHash(data)) : true;
 
   if (!hasLink) {
     return content;

@@ -19,7 +19,8 @@ type Props = ItemsProps<SearchResultAddressOrContract | SearchResultMetadataTag 
 
 const SearchBarSuggestAddress = ({ data, isMobile, searchTerm, addressFormat }: Props) => {
   const shouldHighlightHash = ADDRESS_REGEXP.test(searchTerm);
-  const addressHash = data.address_hash;
+  // Support both old backend ("address") and new backend ("address_hash")
+  const addressHash = ('address_hash' in data && data.address_hash) || ('address' in data && (data as { address?: string }).address) || '';
   const hash = 'filecoin_robust_address' in data ? data.filecoin_robust_address ||
     (addressFormat === 'bech32' ? toBech32Address(addressHash) : addressHash) : addressHash;
 

@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 
-const RWA_NOTE_API_URL = 'https://rwa-note-backend-fivenet-593361572149.asia-southeast1.run.app';
+const RWA_NOTE_API_URL = process.env.NEXT_PUBLIC_RWA_BACKEND_API_URL || 'https://rwa-note-backend-fivenet-593361572149.asia-southeast1.run.app';
 
 export default async function handler(
   req: NextApiRequest,

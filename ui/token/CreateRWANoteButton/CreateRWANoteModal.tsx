@@ -263,7 +263,7 @@ const CreateRWANoteModal = ({ isOpen, onClose, tokenAddress, ownerAddress, isEdi
       if (response.status === 201 || response.status === 200 || response.ok) {
         toaster.success({
           title: 'Success',
-          description: isEditMode ? 'RWA Note updated successfully!' : 'RWA Note created successfully!',
+          description: isEditMode ? 'RWA Disclosure updated successfully!' : 'RWA Disclosure created successfully!',
         });
 
         // Invalidate queries to refetch the note data without reloading the page
@@ -309,7 +309,7 @@ const CreateRWANoteModal = ({ isOpen, onClose, tokenAddress, ownerAddress, isEdi
   if (isSubmitting) {
     buttonLabel = 'Processing Registration…';
   } else if (isEditMode) {
-    buttonLabel = 'Save Note';
+    buttonLabel = 'Save';
   } else {
     buttonLabel = isButtonDisabled
       ? 'Disclosure & Compliance Required'

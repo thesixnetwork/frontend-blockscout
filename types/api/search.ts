@@ -49,6 +49,7 @@ type SearchResultEnsInfo = {
 interface SearchResultAddressData {
   name: string | null;
   address_hash: string;
+  address?: string; // older backend versions return "address" instead of "address_hash"
   is_smart_contract_verified: boolean;
   certified?: true;
   filecoin_robust_address?: string | null;
