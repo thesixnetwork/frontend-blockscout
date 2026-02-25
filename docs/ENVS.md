@@ -709,6 +709,7 @@ This feature enables Real-World Asset (RWA) disclosure statement management for 
 | Variable | Type| Description | Compulsoriness  | Default value | Example value | Version |
 | --- | --- | --- | --- | --- | --- | --- |
 | NEXT_PUBLIC_RWA_NOTE_CONTRACT_ADDRESS | `string` | Smart contract address for RWA Note feature | - | - | `0x867AA9D2885081849d6a08b3db67574975B7D7D7` | v2.4.0+ |
+| NEXT_PUBLIC_RWA_BACKEND_API_URL | `string` | Backend API URL for RWA Note feature | - | - | `https://rwa-note-backend-fivenet-593361572149.asia-southeast1.run.app` | v2.4.0+ |
 
 &nbsp;
 
