@@ -96,6 +96,7 @@ const CreateRWANoteModal = ({ isOpen, onClose, tokenAddress, ownerAddress, isEdi
     address: RWA_NOTE_CONTRACT_ADDRESS as `0x${string}`,
     abi: rwaNoteAbi,
     functionName: 'feeAmount',
+    chainId: Number(config.chain.id),
   });
 
   // Read SIX token address from contract
@@ -103,6 +104,7 @@ const CreateRWANoteModal = ({ isOpen, onClose, tokenAddress, ownerAddress, isEdi
     address: RWA_NOTE_CONTRACT_ADDRESS as `0x${string}`,
     abi: rwaNoteAbi,
     functionName: 'sixToken',
+    chainId: Number(config.chain.id),
   });
 
   // Check if token has already paid (for additional validation)
@@ -111,6 +113,7 @@ const CreateRWANoteModal = ({ isOpen, onClose, tokenAddress, ownerAddress, isEdi
     abi: rwaNoteAbi,
     functionName: 'tokenInfo',
     args: [tokenAddress as `0x${string}`],
+    chainId: Number(config.chain.id),
   }) as { data: TokenInfoData | undefined };
 
   const handleClose = React.useCallback(() => {
@@ -285,7 +288,7 @@ const CreateRWANoteModal = ({ isOpen, onClose, tokenAddress, ownerAddress, isEdi
     }
   };
 
-  const feeAmountInSix = feeAmount ? Number(feeAmount) / 1e18 : 0;
+  const feeAmountInSix = feeAmount ? (Number(BigInt(feeAmount as bigint) / BigInt(1e12)) / 1e6) : 0;
   const zeroAddress = '0x0000000000000000000000000000000000000000';
   const isZeroAddress = !sixTokenAddress || sixTokenAddress === zeroAddress;
 
