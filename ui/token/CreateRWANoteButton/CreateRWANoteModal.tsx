@@ -20,7 +20,7 @@ import { Tooltip } from 'toolkit/chakra/tooltip';
 
 import rwaNoteAbi from '../../../ABI/rwa-create-note-abi.json';
 
-const RWA_NOTE_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_RWA_NOTE_CONTRACT_ADDRESS || '0x2A0f976Ad09e8389Aaf687709f81369fb93E4f9a';
+const RWA_NOTE_CONTRACT_ADDRESS_FALLBACK = '0xb164761a3a0402ad291FC416036e9803ca19B37A';
 
 // TokenType enum from smart contract: 0 = UNKNOWN, 1 = ERC20, 2 = ERC721
 // Must be passed as numbers to the contract
@@ -75,6 +75,9 @@ const CreateRWANoteModal = ({ isOpen, onClose, tokenAddress, ownerAddress, isEdi
   const [isComplianceConfirmed, setIsComplianceConfirmed] = React.useState(false);
 
   const queryClient = useQueryClient();
+
+  // Read contract address from runtime env (window.__envs) so it works without rebuild
+  const RWA_NOTE_CONTRACT_ADDRESS = config.services.rwaNoteContract.address || RWA_NOTE_CONTRACT_ADDRESS_FALLBACK;
 
   // Pre-populate note when modal opens in edit mode, reset when opening in create mode
   React.useEffect(() => {

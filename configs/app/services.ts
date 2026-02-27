@@ -7,4 +7,7 @@ export default Object.freeze({
   rwaNoteBackend: {
     apiUrl: getEnvValue('NEXT_PUBLIC_RWA_BACKEND_API_URL'),
   },
+  rwaNoteContract: {
+    address: getEnvValue('NEXT_PUBLIC_RWA_NOTE_CONTRACT_ADDRESS'),
+  },
 });
