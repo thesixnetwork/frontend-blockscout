@@ -5,11 +5,15 @@ import { getEnvValue } from './utils';
 const appPort = getEnvValue('NEXT_PUBLIC_APP_PORT');
 const appSchema = getEnvValue('NEXT_PUBLIC_APP_PROTOCOL');
 const appHost = getEnvValue('NEXT_PUBLIC_APP_HOST');
+
+// Omit default ports (443 for https, 80 for http) to avoid WalletConnect metadata URL mismatch
+const isDefaultPort = (appPort === '443' && (appSchema === 'https' || !appSchema)) || (appPort === '80' && appSchema === 'http');
+
 const baseUrl = [
   appSchema || 'https',
   '://',
   appHost,
-  appPort && ':' + appPort,
+  !isDefaultPort && appPort && ':' + appPort,
 ].filter(Boolean).join('');
 const isDev = getEnvValue('NEXT_PUBLIC_APP_ENV') === 'development';
 const isReview = getEnvValue('NEXT_PUBLIC_APP_ENV') === 'review';

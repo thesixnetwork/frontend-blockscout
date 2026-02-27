@@ -1,14 +1,15 @@
 #!/bin/bash
 
 # Build and Push Blockscout Frontend to GCP
+# Builds using GCP Cloud Build (remote) to avoid local memory limitations.
 # Usage: ./build-and-push.sh [VERSION]
 
 set -e
 
 # Configuration
-PROJECT_ID="six-protocol"  # Replace with your GCP project ID
-REGION="asia-southeast1"           # Replace with your preferred region
-REPOSITORY="frontend-blockscout"            # Artifact Registry repository name
+PROJECT_ID="six-protocol"
+REGION="asia-southeast1"
+REPOSITORY="frontend-blockscout"
 IMAGE_NAME="frontend"
 VERSION=${1:-"latest"}
 
@@ -16,7 +17,7 @@ VERSION=${1:-"latest"}
 IMAGE_PATH="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/${IMAGE_NAME}"
 
 echo "========================================="
-echo "Building Blockscout Frontend"
+echo "Building Blockscout Frontend (Cloud Build)"
 echo "========================================="
 echo "Project ID: ${PROJECT_ID}"
 echo "Region: ${REGION}"
@@ -34,37 +35,28 @@ echo "Git Commit: ${GIT_COMMIT_SHA}"
 echo "Git Tag: ${GIT_TAG}"
 echo ""
 
-# Build the Docker image
-echo "Building Docker image..."
-docker build \
-  --platform linux/amd64 \
-  --build-arg GIT_COMMIT_SHA=${GIT_COMMIT_SHA} \
-  --build-arg GIT_TAG=${GIT_TAG} \
-  --build-arg NEXT_OPEN_TELEMETRY_ENABLED=false \
-  -t ${IMAGE_PATH}:${VERSION} \
-  -t ${IMAGE_PATH}:${GIT_COMMIT_SHA} \
-  -t ${IMAGE_PATH}:latest \
-  -f Dockerfile \
-  .
-
-echo ""
-echo "Build completed successfully!"
-echo ""
-
-# Authenticate with GCP (if not already authenticated)
+# Authenticate with GCP
 echo "Authenticating with GCP..."
 gcloud auth configure-docker ${REGION}-docker.pkg.dev
 
-# Push the image
+# Build and push using GCP Cloud Build (no local memory limit)
 echo ""
-echo "Pushing image to GCP Artifact Registry..."
-docker push ${IMAGE_PATH}:${VERSION}
-docker push ${IMAGE_PATH}:${GIT_COMMIT_SHA}
-docker push ${IMAGE_PATH}:latest
+echo "Submitting build to GCP Cloud Build..."
+echo "(This runs in the cloud - no local memory required)"
+echo ""
+
+gcloud builds submit \
+  --project=${PROJECT_ID} \
+  --region=${REGION} \
+  --disk-size=100 \
+  --timeout=3600 \
+  --substitutions=_GIT_COMMIT_SHA=${GIT_COMMIT_SHA},_GIT_TAG=${GIT_TAG},_IMAGE_TAG=${IMAGE_PATH}:${VERSION} \
+  --config=cloudbuild.yaml \
+  .
 
 echo ""
 echo "========================================="
-echo "✅ Successfully pushed images:"
+echo "✅ Successfully built and pushed images:"
 echo "   - ${IMAGE_PATH}:${VERSION}"
 echo "   - ${IMAGE_PATH}:${GIT_COMMIT_SHA}"
 echo "   - ${IMAGE_PATH}:latest"

@@ -1,0 +1,35 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    env:
+      - 'DOCKER_BUILDKIT=1'
+    args:
+      - 'build'
+      - '--platform=linux/amd64'
+      - '--build-arg=GIT_COMMIT_SHA=$_GIT_COMMIT_SHA'
+      - '--build-arg=GIT_TAG=$_GIT_TAG'
+      - '--build-arg=NEXT_OPEN_TELEMETRY_ENABLED=false'
+      - '--build-arg=NEXT_TELEMETRY_DISABLED=1'
+      - '-t=$_IMAGE_TAG'
+      - '-t=$_IMAGE_REPO:$_GIT_COMMIT_SHA'
+      - '-t=$_IMAGE_REPO:latest'
+      - '-f=Dockerfile'
+      - '.'
+    timeout: '3600s'
+
+substitutions:
+  _GIT_COMMIT_SHA: 'unknown'
+  _GIT_TAG: 'v1.0.0'
+  _IMAGE_TAG: 'asia-southeast1-docker.pkg.dev/six-protocol/frontend-blockscout/frontend:latest'
+  _IMAGE_REPO: 'asia-southeast1-docker.pkg.dev/six-protocol/frontend-blockscout/frontend'
+
+options:
+  machineType: 'E2_HIGHCPU_32'
+  diskSizeGb: 100
+  logging: GCS_ONLY
+
+images:
+  - '$_IMAGE_TAG'
+  - '$_IMAGE_REPO:$_GIT_COMMIT_SHA'
+  - '$_IMAGE_REPO:latest'
+
+timeout: '3600s'
