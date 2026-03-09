@@ -1,10 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { readContract } from '@wagmi/core';
 
+import appConfig from 'configs/app';
 import wagmiConfig from 'lib/web3/wagmiConfig';
 
 interface RWANoteData {
-  _id: string;
+  id: string;          // API returns "id" not "_id"
   contractAddress: string;
   contractOwnerAddress: string;
   note: string;
@@ -20,21 +21,29 @@ interface UseCheckRWANoteEligibilityResult {
   isCheckingNote: boolean;
 }
 
+// Derive network name from chain ID (98 = sixnet, 150 = fivenet)
+function getNetworkName(): 'sixnet' | 'fivenet' {
+  const id = Number(appConfig.chain.id);
+  if (id === 150) return 'fivenet';
+  return 'sixnet';
+}
+
 // Check if the token already has an RWA note and return the data
 async function fetchRWANote(tokenAddress: string): Promise<RWANoteData | null> {
   try {
+    const network = getNetworkName();
     // Use Next.js API route to proxy the request and avoid CSP issues
-    const response = await fetch(`/node-api/rwa-note?endpoint=/rwa-notes/by-contract/${tokenAddress}`);
-    
+    const response = await fetch(`/node-api/rwa-note?endpoint=${encodeURIComponent(`/${network}/rwa-notes/by-contract/${tokenAddress}`)}`);
+
     if (response.status === 404) {
       return null; // No note exists
     }
-    
+
     if (response.ok) {
-      const data = await response.json();
-      return data as RWANoteData;
+      const data = await response.json() as RWANoteData;
+      return data;
     }
-    
+
     throw new Error('Failed to check RWA note status');
   } catch (error) {
     return null;

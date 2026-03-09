@@ -18,39 +18,21 @@ import { Textarea } from 'toolkit/chakra/textarea';
 import { toaster } from 'toolkit/chakra/toaster';
 import { Tooltip } from 'toolkit/chakra/tooltip';
 
-import rwaNoteAbi from '../../../ABI/rwa-create-note-abi.json';
+// New disclosure contract ABI (rwaNoteAuthentication — payable, takes only tokenAddress)
+import rwaNoteAbi from '../../../ABI/RWA_DISCLOSURE_CONTRACT_ABI.json';
+import useRWAAuth from './useRWAAuth';
 
-const RWA_NOTE_CONTRACT_ADDRESS_FALLBACK = '0xb164761a3a0402ad291FC416036e9803ca19B37A';
+const RWA_NOTE_CONTRACT_ADDRESS_FALLBACK = '0xc1C9B017F845D3BaE85f9231DD88a908a560B456';
 
-// TokenType enum from smart contract: 0 = UNKNOWN, 1 = ERC20, 2 = ERC721
-// Must be passed as numbers to the contract
-const TOKEN_TYPE = {
-  UNKNOWN: 0,
-  ERC20: 1,
-  ERC721: 2,
-} as const;
-
-// ERC20 ABI for approve function
-const ERC20_ABI = [
-  {
-    inputs: [
-      { name: 'spender', type: 'address' },
-      { name: 'amount', type: 'uint256' },
-    ],
-    name: 'approve',
-    outputs: [{ name: '', type: 'bool' }],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-] as const;
-
-interface TokenInfoData {
-  hasPaid: boolean;
-  tokenType: number;
+// Derive network name from chain ID (98 = sixnet, 150 = fivenet, default sixnet)
+function getNetworkName(): 'sixnet' | 'fivenet' {
+  const id = Number(config.chain.id);
+  if (id === 150) return 'fivenet';
+  return 'sixnet';
 }
 
 interface RWANoteData {
-  _id: string;
+  id: string;          // API returns "id" not "_id"
   contractAddress: string;
   contractOwnerAddress: string;
   note: string;
@@ -71,13 +53,14 @@ const CreateRWANoteModal = ({ isOpen, onClose, tokenAddress, ownerAddress, isEdi
   const [note, setNote] = React.useState('');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [txHash, setTxHash] = React.useState<string | null>(null);
-  const [approvalTxHash, setApprovalTxHash] = React.useState<string | null>(null);
   const [isComplianceConfirmed, setIsComplianceConfirmed] = React.useState(false);
 
   const queryClient = useQueryClient();
+  const { getAccessToken, isAuthenticating } = useRWAAuth();
 
-  // Read contract address from runtime env (window.__envs) so it works without rebuild
+  // Hardcoded contract address — new SixRwaDisclosureContract
   const RWA_NOTE_CONTRACT_ADDRESS = config.services.rwaNoteContract.address || RWA_NOTE_CONTRACT_ADDRESS_FALLBACK;
+  const network = getNetworkName();
 
   // Pre-populate note when modal opens in edit mode, reset when opening in create mode
   React.useEffect(() => {
@@ -94,7 +77,7 @@ const CreateRWANoteModal = ({ isOpen, onClose, tokenAddress, ownerAddress, isEdi
 
   const { writeContractAsync } = useWriteContract();
 
-  // Read fee amount from contract
+  // Read fee amount from the new disclosure contract
   const { data: feeAmount, isLoading: isLoadingFee } = useReadContract({
     address: RWA_NOTE_CONTRACT_ADDRESS as `0x${string}`,
     abi: rwaNoteAbi,
@@ -102,27 +85,18 @@ const CreateRWANoteModal = ({ isOpen, onClose, tokenAddress, ownerAddress, isEdi
     chainId: Number(config.chain.id),
   });
 
-  // Read SIX token address from contract
-  const { data: sixTokenAddress } = useReadContract({
+  // Check authentication status on-chain (isAuthenticated, authenticatedBy, timestamp)
+  const { data: contractRecord } = useReadContract({
     address: RWA_NOTE_CONTRACT_ADDRESS as `0x${string}`,
     abi: rwaNoteAbi,
-    functionName: 'sixToken',
-    chainId: Number(config.chain.id),
-  });
-
-  // Check if token has already paid (for additional validation)
-  const { data: tokenInfo } = useReadContract({
-    address: RWA_NOTE_CONTRACT_ADDRESS as `0x${string}`,
-    abi: rwaNoteAbi,
-    functionName: 'tokenInfo',
+    functionName: 'getContractRecord',
     args: [tokenAddress as `0x${string}`],
     chainId: Number(config.chain.id),
-  }) as { data: TokenInfoData | undefined };
+  }) as { data: { isAuthenticated: boolean; authenticatedBy: string; timestamp: bigint } | undefined };
 
   const handleClose = React.useCallback(() => {
     setNote('');
     setTxHash(null);
-    setApprovalTxHash(null);
     setIsSubmitting(false);
     setIsComplianceConfirmed(false);
     onClose();
@@ -145,39 +119,36 @@ const CreateRWANoteModal = ({ isOpen, onClose, tokenAddress, ownerAddress, isEdi
         throw new Error('Invalid token or owner address');
       }
 
-      // Skip payment flow if editing existing note
+      // ── STEP 1: On-chain authentication (create mode only) ────────────────
       if (!isEditMode) {
-        // Check if already paid
-        if (tokenInfo?.hasPaid === true) {
-          throw new Error('This token has already paid the RWA Note fee');
-        }
-
-        // Check if sixTokenAddress is the zero address (0x0000...)
-        const isZeroAddress = !sixTokenAddress || sixTokenAddress === '0x0000000000000000000000000000000000000000';
-
-        if (isZeroAddress) {
-          // Contract uses native currency (not ERC20 tokens)
+        // If already authenticated on-chain, skip the payment tx (may be a retry after partial failure)
+        if (contractRecord?.isAuthenticated === true) {
+          toaster.info({
+            title: 'Already Authenticated',
+            description: 'Contract is already authenticated on-chain. Proceeding to sign in…',
+          });
+        } else {
           toaster.info({
             title: 'Payment Required',
-            description: 'Sending native currency payment...',
+            description: 'Sending native currency payment to authenticate the contract…',
           });
 
-          // Call payFeeForToken with value (native currency)
-          // TokenType: 1 = ERC20, 2 = ERC721
+          // Call rwaNoteAuthentication(tokenAddress) with native value
           const hash = await writeContractAsync({
             address: RWA_NOTE_CONTRACT_ADDRESS as `0x${string}`,
             abi: rwaNoteAbi,
-            functionName: 'payFeeForToken',
-            args: [
-              tokenAddress as `0x${string}`,
-              TOKEN_TYPE.ERC20, // Pass as number: 1
-            ],
-            value: feeAmount as bigint, // Pay with native currency
+            functionName: 'rwaNoteAuthentication',
+            args: [ tokenAddress as `0x${string}` ],
+            value: feeAmount as bigint,
           });
 
           setTxHash(hash);
 
-          // Wait for transaction confirmation
+          toaster.info({
+            title: 'Transaction Submitted',
+            description: 'Waiting for on-chain confirmation…',
+          });
+
           const receipt = await waitForTransactionReceipt(wagmiConfig.config, {
             hash,
             chainId: Number(config.chain.id),
@@ -186,82 +157,40 @@ const CreateRWANoteModal = ({ isOpen, onClose, tokenAddress, ownerAddress, isEdi
           if (receipt.status === 'reverted') {
             throw new Error('Transaction reverted');
           }
-        } else {
-          // Contract uses ERC20 SIX tokens - need approval first
-          toaster.info({
-            title: 'Approval Required',
-            description: 'Please approve the contract to spend your SIX tokens...',
-          });
-
-          const approvalHash = await writeContractAsync({
-            address: sixTokenAddress as `0x${string}`,
-            abi: ERC20_ABI,
-            functionName: 'approve',
-            args: [RWA_NOTE_CONTRACT_ADDRESS as `0x${string}`, feeAmount as bigint],
-          });
-
-          setApprovalTxHash(approvalHash);
-
-          // Wait for approval confirmation
-          const approvalReceipt = await waitForTransactionReceipt(wagmiConfig.config, {
-            hash: approvalHash,
-            chainId: Number(config.chain.id),
-          });
-
-          if (approvalReceipt.status === 'reverted') {
-            throw new Error('Approval transaction reverted');
-          }
 
           toaster.info({
-            title: 'Approval Confirmed',
-            description: 'Now paying the fee...',
+            title: 'On-chain Authentication Confirmed',
+            description: 'Now signing in to save your disclosure…',
           });
-
-          // Call payFeeForToken function (NO value needed, contract will transferFrom)
-          // TokenType: 1 = ERC20, 2 = ERC721
-          const hash = await writeContractAsync({
-            address: RWA_NOTE_CONTRACT_ADDRESS as `0x${string}`,
-            abi: rwaNoteAbi,
-            functionName: 'payFeeForToken',
-            args: [
-              tokenAddress as `0x${string}`,
-              TOKEN_TYPE.ERC20, // Pass as number: 1
-            ],
-            // NO value field - the contract will pull SIX tokens via transferFrom
-          });
-
-          setTxHash(hash);
-
-          // Wait for transaction confirmation
-          const receipt = await waitForTransactionReceipt(wagmiConfig.config, {
-            hash,
-            chainId: Number(config.chain.id),
-          });
-
-          if (receipt.status === 'reverted') {
-            throw new Error('Transaction reverted');
-          }
         }
-      } // End of payment flow for create mode
+      }
 
-      // Call backend API to create or update note via Next.js proxy
+      // ── STEP 2: SIWE login & get access token ─────────────────────────────
+      const accessToken = await getAccessToken(ownerAddress);
 
-      const endpoint = isEditMode && existingNote ?
-        `/rwa-notes/${existingNote._id}` :
-        '/rwa-notes';
+      // ── STEP 3: Call backend API with JWT ─────────────────────────────────
+      const endpoint = isEditMode && existingNote
+        ? `/${ network }/rwa-notes/${ existingNote.id }`
+        : `/${ network }/rwa-notes`;
       const method = isEditMode ? 'PATCH' : 'POST';
-      const body = isEditMode ?
-        { note: note.trim() } :
-        {
+      const body = isEditMode
+        ? { note: note.trim() }
+        : {
           contractAddress: tokenAddress,
           contractOwnerAddress: ownerAddress,
           note: note.trim(),
         };
 
-      const response = await fetch(`/node-api/rwa-note?endpoint=${encodeURIComponent(endpoint)}`, {
+      // Pass ?method= override so reverse proxies that rewrite PATCH→POST are bypassed
+      const proxyUrl = isEditMode
+        ? `/node-api/rwa-note?endpoint=${ encodeURIComponent(endpoint) }&method=PATCH`
+        : `/node-api/rwa-note?endpoint=${ encodeURIComponent(endpoint) }`;
+
+      const response = await fetch(proxyUrl, {
         method,
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${ accessToken }`,
         },
         body: JSON.stringify(body),
       });
@@ -291,15 +220,15 @@ const CreateRWANoteModal = ({ isOpen, onClose, tokenAddress, ownerAddress, isEdi
     }
   };
 
-  const feeAmountInSix = feeAmount ? (Number(BigInt(feeAmount as bigint) / BigInt(1e12)) / 1e6) : 0;
-  const zeroAddress = '0x0000000000000000000000000000000000000000';
-  const isZeroAddress = !sixTokenAddress || sixTokenAddress === zeroAddress;
+  const feeAmountFormatted = feeAmount ? (Number(BigInt(feeAmount as bigint) * BigInt(1000) / BigInt(1e18)) / 1000).toFixed(3) : '0';
+
+  const isBusy = isSubmitting || isAuthenticating;
 
   const handleDialogChange = React.useCallback((details: { open: boolean }) => {
-    if (!details.open && !isSubmitting) {
+    if (!details.open && !isBusy) {
       handleClose();
     }
-  }, [isSubmitting, handleClose]);
+  }, [isBusy, handleClose]);
 
   const handleNoteChange = React.useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setNote(e.target.value);
@@ -309,10 +238,12 @@ const CreateRWANoteModal = ({ isOpen, onClose, tokenAddress, ownerAddress, isEdi
     setIsComplianceConfirmed(Boolean(details.checked));
   }, []);
 
-  const isButtonDisabled = !note.trim() || (!isEditMode && isLoadingFee) || (isEditMode && !isComplianceConfirmed) || (!isEditMode && !isComplianceConfirmed);
+  const isButtonDisabled = !note.trim() || (!isEditMode && isLoadingFee) || !isComplianceConfirmed;
 
   let buttonLabel = '';
-  if (isSubmitting) {
+  if (isAuthenticating) {
+    buttonLabel = 'Waiting for Signature…';
+  } else if (isSubmitting) {
     buttonLabel = 'Processing Registration…';
   } else if (isEditMode) {
     buttonLabel = 'Save';
@@ -343,19 +274,16 @@ const CreateRWANoteModal = ({ isOpen, onClose, tokenAddress, ownerAddress, isEdi
               <>
                 <Text fontSize="md">
                   A registration fee of <Text as="span" fontWeight="bold">
-                    {isLoadingFee ? 'Loading...' : `${feeAmountInSix} SIX`}
+                    {isLoadingFee ? 'Loading...' : `${feeAmountFormatted} SIX`}
                   </Text> is required to publish an official RWA Disclosure Statement associated with this smart contract.
                 </Text>
-
-                {!isZeroAddress && (
-                  <Text fontSize="sm" color="gray.500">
-                    Note: You will need to approve two transactions:
-                    <br />
-                    1. Approve the contract to spend your SIX tokens
-                    <br />
-                    2. Pay the fee to create the note
-                  </Text>
-                )}
+                <Text fontSize="sm" color="gray.500">
+                  You will be asked to:
+                  <br />
+                  1. Confirm a native SIX payment transaction on-chain
+                  <br />
+                  2. Sign a message with your wallet to authenticate with the API
+                </Text>
               </>
             )}
             {isEditMode && (
@@ -388,15 +316,15 @@ const CreateRWANoteModal = ({ isOpen, onClose, tokenAddress, ownerAddress, isEdi
                 value={note}
                 onChange={handleNoteChange}
                 minH="120px"
-                disabled={isSubmitting}
+                disabled={isBusy}
               />
             </Flex>
 
-            <Flex direction="column" gap={2} mt={4} >
+            <Flex direction="column" gap={2} mt={4}>
               <Checkbox
                 checked={isComplianceConfirmed}
                 onCheckedChange={handleComplianceChange}
-                disabled={isSubmitting}
+                disabled={isBusy}
               >
                 <Text fontSize="sm">
                   I confirm that I am an authorized representative of this project and that the
@@ -405,27 +333,10 @@ const CreateRWANoteModal = ({ isOpen, onClose, tokenAddress, ownerAddress, isEdi
               </Checkbox>
             </Flex>
 
-            {approvalTxHash && (
-              <Flex direction="column" gap={2}>
-                <Text fontSize="sm" fontWeight="medium">
-                  Approval Transaction:
-                </Text>
-                <Link
-                  href={`${config.app.baseUrl}/tx/${approvalTxHash}`}
-                  target="_blank"
-                  color="blue.500"
-                  fontSize="sm"
-                  wordBreak="break-all"
-                >
-                  {approvalTxHash}
-                </Link>
-              </Flex>
-            )}
-
             {txHash && (
               <Flex direction="column" gap={2}>
                 <Text fontSize="sm" fontWeight="medium">
-                  Payment Transaction Reference:
+                  Authentication Transaction:
                 </Text>
                 <Link
                   href={`${config.app.baseUrl}/tx/${txHash}`}
@@ -449,7 +360,7 @@ const CreateRWANoteModal = ({ isOpen, onClose, tokenAddress, ownerAddress, isEdi
             <Button
               colorScheme="blue"
               onClick={handlePayFee}
-              loading={isSubmitting}
+              loading={isBusy}
               disabled={isButtonDisabled}
             >
               {buttonLabel}
