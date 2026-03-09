@@ -1,6 +1,33 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 
-const RWA_NOTE_API_URL = process.env.NEXT_PUBLIC_RWA_BACKEND_API_URL || 'https://rwa-note-backend-fivenet-593361572149.asia-southeast1.run.app';
+// Strip trailing /api suffix if the env value was set with it (backward compat)
+function getBaseUrl(): string {
+  const raw = process.env.NEXT_PUBLIC_RWA_BACKEND_API_URL ?? 'https://evm-sixscan-rwa-note-api-4ze6p6t2ga-as.a.run.app';
+  return raw.replace(/\/api\/?$/, '').replace(/\/$/, '');
+}
+
+// Resolve network name server-side from NEXT_PUBLIC_NETWORK_ID env var
+function getNetworkName(): 'sixnet' | 'fivenet' {
+  const id = Number(process.env.NEXT_PUBLIC_NETWORK_ID ?? '98');
+  if (id === 150) return 'fivenet';
+  return 'sixnet';
+}
+
+const NETWORK_NAMES: ReadonlyArray<string> = [ 'sixnet', 'fivenet' ];
+
+/**
+ * Ensure the endpoint starts with /{network}/.
+ * If the client already included the network prefix, pass it through unchanged.
+ * If not (e.g. "/rwa-notes/..."), prepend the server-resolved network.
+ */
+function normalizeEndpoint(endpoint: string): string {
+  const withoutLeadingSlash = endpoint.replace(/^\//, '');
+  const firstSegment = withoutLeadingSlash.split('/')[0];
+  if (NETWORK_NAMES.includes(firstSegment)) {
+    return endpoint; // already has network prefix
+  }
+  return `/${ getNetworkName() }${ endpoint.startsWith('/') ? endpoint : `/${ endpoint }` }`;
+}
 
 export default async function handler(
   req: NextApiRequest,
@@ -8,15 +35,15 @@ export default async function handler(
 ) {
   // Add CORS headers to ensure the route is accessible
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
-  const { endpoint } = req.query;
+  const { endpoint, method: methodOverride } = req.query;
 
   if (!endpoint || typeof endpoint !== 'string') {
     return res.status(400).json({
@@ -26,24 +53,42 @@ export default async function handler(
   }
 
   try {
-    const url = `${ RWA_NOTE_API_URL }${ endpoint }`;
+    const BASE_URL = getBaseUrl();
+    const normalizedEndpoint = normalizeEndpoint(endpoint);
+    const url = `${ BASE_URL }${ normalizedEndpoint }`;
 
-    const options: RequestInit = {
-      method: req.method || 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+    // Support ?method=PATCH|DELETE|PUT override to work around reverse proxies
+    // that rewrite non-GET/POST methods (common in GCP / Cloud Run setups).
+    const effectiveMethod = (
+      typeof methodOverride === 'string' ? methodOverride.toUpperCase() : req.method
+    ) || 'GET';
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
     };
 
-    // Add body for POST and PATCH requests
-    if ((req.method === 'POST' || req.method === 'PATCH') && req.body) {
+    // Forward Authorization header (Bearer JWT) from the client if present
+    const authHeader = req.headers['authorization'];
+    if (authHeader) {
+      headers['Authorization'] = authHeader;
+    }
+
+    const options: RequestInit = {
+      method: effectiveMethod,
+      headers,
+    };
+
+    // Add body for POST, PATCH, PUT requests
+    if ((effectiveMethod === 'POST' || effectiveMethod === 'PATCH' || effectiveMethod === 'PUT') && req.body) {
       options.body = JSON.stringify(req.body);
     }
 
     const response = await fetch(url, options);
 
-    // Forward the status code
-    res.status(response.status);
+    // Handle 204 No Content (DELETE success) — no body to parse
+    if (response.status === 204) {
+      return res.status(204).end();
+    }
 
     // Forward response headers
     const contentType = response.headers.get('content-type');
