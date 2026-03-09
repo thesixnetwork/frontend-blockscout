@@ -181,13 +181,14 @@ const CreateRWANoteModal = ({ isOpen, onClose, tokenAddress, ownerAddress, isEdi
           note: note.trim(),
         };
 
-      // Pass ?method= override so reverse proxies that rewrite PATCH→POST are bypassed
+      // Pass ?method= override so reverse proxies that rewrite PATCH→POST are bypassed.
+      // We always send POST to the Next.js proxy; the real upstream method comes from ?method=.
       const proxyUrl = isEditMode
         ? `/node-api/rwa-note?endpoint=${ encodeURIComponent(endpoint) }&method=PATCH`
-        : `/node-api/rwa-note?endpoint=${ encodeURIComponent(endpoint) }`;
+        : `/node-api/rwa-note?endpoint=${ encodeURIComponent(endpoint) }&method=POST`;
 
       const response = await fetch(proxyUrl, {
-        method,
+        method: 'POST',  // always POST to the Next.js proxy — nginx never rewrites POST
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${ accessToken }`,

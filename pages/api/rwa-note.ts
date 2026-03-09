@@ -57,10 +57,14 @@ export default async function handler(
     const normalizedEndpoint = normalizeEndpoint(endpoint);
     const url = `${ BASE_URL }${ normalizedEndpoint }`;
 
-    // Support ?method=PATCH|DELETE|PUT override to work around reverse proxies
-    // that rewrite non-GET/POST methods (common in GCP / Cloud Run setups).
+    // ?method= query param is the source of truth for the upstream HTTP method.
+    // This bypasses nginx/GCP load balancers that rewrite PATCH/DELETE/PUT → POST.
+    // The client always sends the real method via ?method= and the body via POST.
+    // Fallback to req.method only when no override is present (e.g. plain GET reads).
     const effectiveMethod = (
-      typeof methodOverride === 'string' ? methodOverride.toUpperCase() : req.method
+      typeof methodOverride === 'string' && methodOverride.length > 0
+        ? methodOverride.toUpperCase()
+        : req.method
     ) || 'GET';
 
     const headers: Record<string, string> = {
