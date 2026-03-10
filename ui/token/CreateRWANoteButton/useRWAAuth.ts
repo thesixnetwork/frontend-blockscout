@@ -29,7 +29,7 @@ function storeRefreshToken(token: string, expiresIn: number) {
   try {
     localStorage.setItem(REFRESH_TOKEN_KEY, token);
     localStorage.setItem(EXPIRY_KEY, String(Date.now() + expiresIn * 1000));
-  } catch {
+  } catch (_e) {
     // localStorage might be unavailable (SSR / private-browsing)
   }
 }
@@ -42,7 +42,7 @@ function loadRefreshToken(): { token: string; expiry: number } | null {
       return { token, expiry };
     }
     clearTokenStorage();
-  } catch {
+  } catch (_e) {
     // ignore
   }
   return null;
@@ -52,7 +52,7 @@ function clearTokenStorage() {
   try {
     localStorage.removeItem(REFRESH_TOKEN_KEY);
     localStorage.removeItem(EXPIRY_KEY);
-  } catch {
+  } catch (_e) {
     // ignore
   }
   _accessToken = null;
@@ -186,7 +186,7 @@ export default function useRWAAuth(): UseRWAAuthResult {
     // 2. Try silent refresh
     try {
       return await silentRefresh();
-    } catch {
+    } catch (_e) {
       // Refresh token missing / expired — fall through to full login
     }
 
