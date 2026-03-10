@@ -64,9 +64,11 @@ const RWANoteDisplay = ({ tokenAddress }: Props) => {
 
   return (
     <Box
-      mt={4}
+      
       mb={4}
       p="18px"
+      display="inline-flex"
+      maxWidth="100%"
       bg="linear-gradient(180deg,#F6FAFF 0%, #EEF5FF 100%)"
       border="1px solid"
       borderColor="#8FB8E8"

@@ -220,7 +220,7 @@ const CreateRWANoteModal = ({ isOpen, onClose, tokenAddress, ownerAddress, isEdi
     }
   };
 
-  const feeAmountFormatted = feeAmount ? (Number(BigInt(feeAmount as bigint) * BigInt(1000) / BigInt(1e18)) / 1000).toFixed(3) : '0';
+  const feeAmountFormatted = feeAmount ? parseFloat((Number(BigInt(feeAmount as bigint) * BigInt(1000) / BigInt(1e18)) / 1000).toFixed(3)).toString() : '0';
 
   const isBusy = isSubmitting || isAuthenticating;
 
