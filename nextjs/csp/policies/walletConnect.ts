@@ -18,6 +18,8 @@ export function walletConnect(): CspDev.DirectiveDescriptor {
       'wss://relay.walletconnect.com',
       'wss://relay.walletconnect.org',
       'wss://www.walletlink.org',
+      // Coinbase Smart Wallet analytics SDK
+      'https://cca-lite.coinbase.com',
     ],
     'frame-ancestors': [
       '*.walletconnect.org',

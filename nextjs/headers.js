@@ -22,7 +22,9 @@ async function headers() {
         },
         {
           key: 'Cross-Origin-Opener-Policy',
-          value: 'same-origin',
+          // 'same-origin' breaks Coinbase Smart Wallet popup communication.
+          // 'same-origin-allow-popups' preserves security while allowing wallet popups.
+          value: 'same-origin-allow-popups',
         },
         {
           key: 'Referrer-Policy',
