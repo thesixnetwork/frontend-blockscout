@@ -65,6 +65,12 @@ export function app(isPrivateMode = false): CspDev.DirectiveDescriptor {
 
       // CapybaraRunner
       '\'sha256-5+YTmTcBwCYdJ8Jetbr6kyjGp0Ry/H7ptpoun6CrSwQ=\'',
+
+      // Next.js inline script (hash changes per build — update after each rebuild if CSP violations appear)
+      '\'sha256-/ZmmXHg9XaKeWp0VJihBDn4cJ7lLM1jUtpgqdgVFvmA=\'',
+
+      // Coinzilla initCCA.js inline script injection
+      '\'sha256-NzvNrqk5jB9YZATwo5BF4JoRlJ02HsnFikbKXgEPdaQ=\'',
     ],
 
     'style-src': [
