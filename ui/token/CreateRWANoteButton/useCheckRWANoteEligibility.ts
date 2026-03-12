@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { readContract } from '@wagmi/core';
 
 import appConfig from 'configs/app';
+import type { Address } from 'types/api/address';
 import wagmiConfig from 'lib/web3/wagmiConfig';
 
 interface RWANoteData {
@@ -32,11 +33,10 @@ function getNetworkName(): 'sixnet' | 'fivenet' {
 async function fetchRWANote(tokenAddress: string): Promise<RWANoteData | null> {
   try {
     const network = getNetworkName();
-    // Use Next.js API route to proxy the request and avoid CSP issues
     const response = await fetch(`/node-api/rwa-note?endpoint=${encodeURIComponent(`/${network}/rwa-notes/by-contract/${tokenAddress}`)}`);
 
     if (response.status === 404) {
-      return null; // No note exists
+      return null;
     }
 
     if (response.ok) {
@@ -61,25 +61,46 @@ const OWNER_ABI = [
   },
 ] as const;
 
-// Check if the connected wallet is the owner of the token contract
-async function checkTokenOwnership(tokenAddress: string, walletAddress: string): Promise<boolean> {
+// Fetch the deployer (creator) address from the Blockscout scanner API
+async function fetchDeployerAddress(tokenAddress: string): Promise<string | null> {
   try {
-    // Call the owner() function on the ERC-20 contract
-    const contractOwner = await readContract(wagmiConfig.config, {
+    const response = await fetch(`/api/v2/addresses/${tokenAddress}`);
+    if (!response.ok) {
+      return null;
+    }
+    const data = await response.json() as Address;
+    return data.creator_address_hash ?? null;
+  } catch (error) {
+    return null;
+  }
+}
+
+// Check if the connected wallet is the owner() OR the deployer of the token contract
+async function checkTokenEligibility(
+  tokenAddress: string,
+  walletAddress: string,
+): Promise<boolean> {
+  const wallet = walletAddress.toLowerCase();
+
+  // Run owner() call and deployer fetch in parallel
+  const [ contractOwner, deployerAddress ] = await Promise.all([
+    readContract(wagmiConfig.config, {
       address: tokenAddress as `0x${string}`,
       abi: OWNER_ABI,
       functionName: 'owner',
-    });
-    
-    // Compare addresses
-    if (contractOwner && contractOwner.toLowerCase() === walletAddress.toLowerCase()) {
-      return true;
-    }
-    
-    return false;
-  } catch (error) {
-    return false;
+    }).catch(() => null),
+    fetchDeployerAddress(tokenAddress),
+  ]);
+
+  if (contractOwner && (contractOwner as string).toLowerCase() === wallet) {
+    return true;
   }
+
+  if (deployerAddress && deployerAddress.toLowerCase() === wallet) {
+    return true;
+  }
+
+  return false;
 }
 
 export default function useCheckRWANoteEligibility(
@@ -91,19 +112,19 @@ export default function useCheckRWANoteEligibility(
     queryKey: [ 'rwa-note-exists', tokenAddress ],
     queryFn: () => fetchRWANote(tokenAddress),
     enabled: Boolean(tokenAddress),
-    staleTime: 30000, // 30 seconds
+    staleTime: 30000,
   });
 
   const hasNote = noteData !== null;
 
-  // Check ownership
+  // Check ownership (owner() on-chain) AND deployer (scanner API) in one query
   const ownershipQuery = useQuery({
-    queryKey: [ 'token-ownership', tokenAddress, walletAddress ],
-    queryFn: () => checkTokenOwnership(tokenAddress, walletAddress!),
+    queryKey: [ 'token-eligibility', tokenAddress, walletAddress ],
+    queryFn: () => checkTokenEligibility(tokenAddress, walletAddress!),
     enabled: Boolean(tokenAddress && walletAddress),
-    staleTime: 60000, // 1 minute
+    staleTime: 60000,
   });
-  
+
   const isOwner = ownershipQuery.data ?? false;
   const isCheckingOwner = ownershipQuery.isLoading;
 

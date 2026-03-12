@@ -22,7 +22,7 @@ import { Tooltip } from 'toolkit/chakra/tooltip';
 import rwaNoteAbi from '../../../ABI/RWA_DISCLOSURE_CONTRACT_ABI.json';
 import useRWAAuth from './useRWAAuth';
 
-const RWA_NOTE_CONTRACT_ADDRESS_FALLBACK = '0xc1C9B017F845D3BaE85f9231DD88a908a560B456';
+const RWA_NOTE_CONTRACT_ADDRESS_FALLBACK = '0x7767d7bc3bA67Dc50593572296B948474B9aF2c0';
 
 // Derive network name from chain ID (98 = sixnet, 150 = fivenet, default sixnet)
 function getNetworkName(): 'sixnet' | 'fivenet' {
