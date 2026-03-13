@@ -8,6 +8,60 @@ import React from 'react';
 
 import { Skeleton } from 'toolkit/chakra/skeleton';
 
+// Safely parse a note string that may contain <Link href="...">text</Link> tags.
+// Only http/https URLs are allowed; everything else is rendered as plain text.
+function parseNoteWithLinks(note: string): Array<React.ReactNode> {
+  const LINK_RE = /<Link\s+href="([^"]*)">([^<]*)<\/Link>/g;
+  const nodes: Array<React.ReactNode> = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = LINK_RE.exec(note)) !== null) {
+    // Plain text before this link
+    if (match.index > lastIndex) {
+      nodes.push(note.slice(lastIndex, match.index));
+    }
+
+    const href = match[1];
+    const label = match[2];
+
+    // Only allow http / https to prevent javascript: and other dangerous schemes
+    let isSafeUrl = false;
+    try {
+      const parsed = new URL(href);
+      isSafeUrl = parsed.protocol === 'http:' || parsed.protocol === 'https:';
+    } catch {
+      isSafeUrl = false;
+    }
+
+    if (isSafeUrl) {
+      nodes.push(
+        <a
+          key={ match.index }
+          href={ href }
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: '#2F6FD6', textDecoration: 'underline' }}
+        >
+          { label }
+        </a>,
+      );
+    } else {
+      // Unsafe URL – render as plain text
+      nodes.push(label);
+    }
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Remaining plain text after the last link
+  if (lastIndex < note.length) {
+    nodes.push(note.slice(lastIndex));
+  }
+
+  return nodes;
+}
+
 interface RWANoteData {
   _id: string;
   contractAddress: string;
@@ -81,7 +135,7 @@ const RWANoteDisplay = ({ tokenAddress }: Props) => {
           <Text as="span" fontWeight="600" color="#1F3B5B">
             RWA Disclosure:
           </Text>{" "}
-          {noteData.note}
+          { parseNoteWithLinks(noteData.note) }
         </Text>
 
         <Box flexShrink={0} opacity={0.95} >

@@ -1,4 +1,5 @@
 import {
+  Box,
   Flex,
   Input,
   Text,
@@ -49,9 +50,119 @@ interface Props {
   existingNote?: RWANoteData | null;
 }
 
+const DISCLOSURE_EXAMPLES = [
+  {
+    title: 'Real Estate Token',
+    text:
+      'This token represents a fractional ownership interest in a residential property located in Bangkok, Thailand. '
+      + 'The asset is managed by XYZ Property Co., Ltd. under a leasehold agreement. '
+      + 'Distributions are paid quarterly in SIX tokens. '
+      + 'Governance and compliance are handled by the issuer in accordance with Thai SEC regulations. '
+      + 'For more information visit <Link href="https://example.com/reit-docs">Official Documentation</Link>.',
+  },
+  {
+    title: 'Bond / Fixed-Income Token',
+    text:
+      'This token represents a corporate bond issued by ABC Finance Ltd. with a face value of 1,000 USD '
+      + 'and a 6% annual coupon rate, maturing on 31 December 2027. '
+      + 'Principal and interest repayments are made on-chain to token holders. '
+      + 'The bond is governed under the laws of Singapore. '
+      + 'Prospectus: <Link href="https://example.com/bond-prospectus">Download PDF</Link>.',
+  },
+  {
+    title: 'Commodity / Gold-Backed Token',
+    text:
+      'Each token is backed by 1 troy ounce of LBMA-certified gold held in a bonded vault in Singapore, '
+      + 'audited quarterly by IndependentAudit Pte. Ltd. '
+      + 'Redemption requests are processed within 5 business days. '
+      + 'Custody agreement: <Link href="https://example.com/custody">View Agreement</Link>.',
+  },
+];
+
+const DisclosureHelpModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+  const handleOpenChange = React.useCallback((d: { open: boolean }) => { if (!d.open) onClose(); }, [ onClose ]);
+  return (
+    <DialogRoot open={isOpen} onOpenChange={handleOpenChange} size="lg">
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>How to Write an RWA Disclosure Statement</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
+          <Flex direction="column" gap={5}>
+            <Text fontSize="sm" color="gray.600">
+              An RWA (Real-World Asset) Disclosure Statement is a short, factual description of the
+              real-world asset that this smart contract represents. It should be easy for investors
+              and regulators to read and verify. Good disclosures include:
+            </Text>
+            <Flex direction="column" gap={1} pl={4}>
+              { [
+                'The type of real-world asset (property, bond, commodity, etc.)',
+                'The issuer or manager and their jurisdiction',
+                'Key financial terms (value, yield, maturity) if applicable',
+                'How distributions or redemptions work',
+                'A link to official documentation using the Link tag shown below',
+              ].map((item) => (
+                <Text key={item} fontSize="sm" color="gray.700">
+                  {'• '}{item}
+                </Text>
+              )) }
+            </Flex>
+
+            <Text fontSize="sm" fontWeight="semibold" color="gray.700" mt={2}>
+              Linking to External URLs
+            </Text>
+            <Box
+              bg="gray.50"
+              border="1px solid"
+              borderColor="gray.200"
+              borderRadius="md"
+              p={3}
+              fontSize="sm"
+              fontFamily="mono"
+              color="blue.700"
+              wordBreak="break-all"
+            >
+              {'<Link href="https://your-website.com/docs">Click here</Link>'}
+            </Box>
+            <Text fontSize="xs" color="gray.500">
+              Only https:// and http:// URLs are accepted.
+              The link will open in a new tab on the token page.
+            </Text>
+
+            <Text fontSize="sm" fontWeight="semibold" color="gray.700" mt={2}>
+              Examples
+            </Text>
+            { DISCLOSURE_EXAMPLES.map((ex) => (
+              <Box
+                key={ex.title}
+                bg="blue.50"
+                border="1px solid"
+                borderColor="blue.100"
+                borderRadius="md"
+                p={3}
+              >
+                <Text fontSize="xs" fontWeight="bold" color="blue.700" mb={1}>
+                  {ex.title}
+                </Text>
+                <Text fontSize="sm" color="gray.700" whiteSpace="pre-wrap">
+                  {ex.text}
+                </Text>
+              </Box>
+            )) }
+          </Flex>
+        </DialogBody>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Close</Button>
+        </DialogFooter>
+      </DialogContent>
+    </DialogRoot>
+  );
+};
+
 const CreateRWANoteModal = ({ isOpen, onClose, tokenAddress, ownerAddress, isEditMode, existingNote }: Props) => {
   const [note, setNote] = React.useState('');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [isHelpOpen, setIsHelpOpen] = React.useState(false);
   const [txHash, setTxHash] = React.useState<string | null>(null);
   const [isComplianceConfirmed, setIsComplianceConfirmed] = React.useState(false);
 
@@ -258,6 +369,8 @@ const CreateRWANoteModal = ({ isOpen, onClose, tokenAddress, ownerAddress, isEdi
     : '';
 
   return (
+    <>
+    <DisclosureHelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
     <DialogRoot
       open={isOpen}
       onOpenChange={handleDialogChange}
@@ -304,9 +417,20 @@ const CreateRWANoteModal = ({ isOpen, onClose, tokenAddress, ownerAddress, isEdi
             </Flex>
 
             <Flex direction="column" gap={2}>
-              <Text fontSize="sm" fontWeight="medium">
-                RWA Disclosure Statement:
-              </Text>
+              <Flex justify="space-between" align="center">
+                <Text fontSize="sm" fontWeight="medium">
+                  RWA Disclosure Statement:
+                </Text>
+                <Button
+                  size="xs"
+                  variant="ghost"
+                  colorScheme="blue"
+                  onClick={() => setIsHelpOpen(true)}
+                  disabled={isBusy}
+                >
+                  📄 Disclosure Documentation
+                </Button>
+              </Flex>
               <Textarea
                 placeholder={
                   'Provide a factual and structured disclosure describing the purpose, nature of'
@@ -320,17 +444,19 @@ const CreateRWANoteModal = ({ isOpen, onClose, tokenAddress, ownerAddress, isEdi
               />
             </Flex>
 
-            <Flex direction="column" gap={2} mt={4}>
+
+
+            <Flex align="flex-start" gap={2} mt={4}>
               <Checkbox
                 checked={isComplianceConfirmed}
                 onCheckedChange={handleComplianceChange}
                 disabled={isBusy}
-              >
-                <Text fontSize="sm">
-                  I confirm that I am an authorized representative of this project and that the
-                  information provided is accurate, complete, and not misleading.
-                </Text>
-              </Checkbox>
+                mt="2px"
+              />
+              <Text fontSize="sm" lineHeight="1.5" cursor="pointer" onClick={() => !isBusy && setIsComplianceConfirmed((v) => !v)}>
+                I confirm that I am an authorized representative of this project and that the
+                information provided is accurate, complete, and not misleading.
+              </Text>
             </Flex>
 
             {txHash && (
@@ -369,6 +495,7 @@ const CreateRWANoteModal = ({ isOpen, onClose, tokenAddress, ownerAddress, isEdi
         </DialogFooter>
       </DialogContent>
     </DialogRoot>
+    </>
   );
 };
 

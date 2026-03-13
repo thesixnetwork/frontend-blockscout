@@ -1,8 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { readContract } from '@wagmi/core';
 
 import appConfig from 'configs/app';
-import wagmiConfig from 'lib/web3/wagmiConfig';
+import useApiQuery from 'lib/api/useApiQuery';
 
 interface RWANoteData {
   id: string;          // API returns "id" not "_id"
@@ -15,10 +14,12 @@ interface RWANoteData {
 
 interface UseCheckRWANoteEligibilityResult {
   isOwner: boolean;
+  isDeployer: boolean;
   hasNote: boolean;
   noteData: RWANoteData | null;
   isCheckingOwner: boolean;
   isCheckingNote: boolean;
+  isCheckingDeployer: boolean;
 }
 
 // Derive network name from chain ID (98 = sixnet, 150 = fivenet)
@@ -50,38 +51,6 @@ async function fetchRWANote(tokenAddress: string): Promise<RWANoteData | null> {
   }
 }
 
-// Minimal ABI for the owner() function from Ownable pattern
-const OWNER_ABI = [
-  {
-    inputs: [],
-    name: 'owner',
-    outputs: [{ internalType: 'address', name: '', type: 'address' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-] as const;
-
-// Check if the connected wallet is the owner of the token contract
-async function checkTokenOwnership(tokenAddress: string, walletAddress: string): Promise<boolean> {
-  try {
-    // Call the owner() function on the ERC-20 contract
-    const contractOwner = await readContract(wagmiConfig.config, {
-      address: tokenAddress as `0x${string}`,
-      abi: OWNER_ABI,
-      functionName: 'owner',
-    });
-    
-    // Compare addresses
-    if (contractOwner && contractOwner.toLowerCase() === walletAddress.toLowerCase()) {
-      return true;
-    }
-    
-    return false;
-  } catch (error) {
-    return false;
-  }
-}
-
 export default function useCheckRWANoteEligibility(
   tokenAddress: string,
   walletAddress?: string,
@@ -96,22 +65,34 @@ export default function useCheckRWANoteEligibility(
 
   const hasNote = noteData !== null;
 
-  // Check ownership
-  const ownershipQuery = useQuery({
-    queryKey: [ 'token-ownership', tokenAddress, walletAddress ],
-    queryFn: () => checkTokenOwnership(tokenAddress, walletAddress!),
-    enabled: Boolean(tokenAddress && walletAddress),
-    staleTime: 60000, // 1 minute
+  // Fetch address info from Blockscout to check the contract deployer.
+  // /api/v2/addresses/:hash returns creator_address_hash (same-origin, no CORS issue).
+  const addressQuery = useApiQuery('general:address', {
+    pathParams: { hash: tokenAddress },
+    queryOptions: {
+      enabled: Boolean(tokenAddress),
+      staleTime: 3_600_000, // 60 minutes – deployer never changes
+    },
   });
-  
-  const isOwner = ownershipQuery.data ?? false;
-  const isCheckingOwner = ownershipQuery.isLoading;
+
+  const isDeployer = Boolean(
+    walletAddress &&
+    addressQuery.data?.creator_address_hash &&
+    addressQuery.data.creator_address_hash.toLowerCase() === walletAddress.toLowerCase(),
+  );
+  const isCheckingDeployer = addressQuery.isLoading;
+
+  // Legacy owner() check kept for backwards compatibility but no longer used by the button.
+  const isOwner = false;
+  const isCheckingOwner = false;
 
   return {
     isOwner,
+    isDeployer,
     hasNote,
     noteData,
     isCheckingOwner,
     isCheckingNote,
+    isCheckingDeployer,
   };
 }
