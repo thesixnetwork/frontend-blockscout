@@ -1,10 +1,32 @@
 steps:
+  # ── Step 1: Pull previous image to warm the local Docker layer cache ──────
+  # Failures are silently ignored (first-time build or network blip).
   - name: 'gcr.io/cloud-builders/docker'
+    id: 'pull-cache'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        docker pull $_IMAGE_REPO:buildcache 2>/dev/null \
+          && echo "Cache image pulled successfully" \
+          || echo "No cache image found – building from scratch"
+    timeout: '180s'
+
+  # ── Step 2: Build with layer cache ───────────────────────────────────────
+  # BUILDKIT_INLINE_CACHE=1  → embeds cache metadata for ALL stages
+  #   (deps, builder, runner) into the pushed image so future builds can
+  #   reuse them via --cache-from.
+  # --cache-from             → feeds that metadata back into this build.
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build'
+    waitFor: ['pull-cache']
     env:
       - 'DOCKER_BUILDKIT=1'
     args:
       - 'build'
       - '--platform=linux/amd64'
+      - '--build-arg=BUILDKIT_INLINE_CACHE=1'
+      - '--cache-from=$_IMAGE_REPO:buildcache'
       - '--build-arg=GIT_COMMIT_SHA=$_GIT_COMMIT_SHA'
       - '--build-arg=GIT_TAG=$_GIT_TAG'
       - '--build-arg=NEXT_OPEN_TELEMETRY_ENABLED=false'
@@ -12,6 +34,8 @@ steps:
       - '-t=$_IMAGE_TAG'
       - '-t=$_IMAGE_REPO:$_GIT_COMMIT_SHA'
       - '-t=$_IMAGE_REPO:latest'
+      # Also tag as the dedicated cache image so the next build can pull it.
+      - '-t=$_IMAGE_REPO:buildcache'
       - '-f=Dockerfile'
       - '.'
     timeout: '3600s'
@@ -31,5 +55,7 @@ images:
   - '$_IMAGE_TAG'
   - '$_IMAGE_REPO:$_GIT_COMMIT_SHA'
   - '$_IMAGE_REPO:latest'
+  # Push the cache image so the next build can warm from it.
+  - '$_IMAGE_REPO:buildcache'
 
 timeout: '3600s'

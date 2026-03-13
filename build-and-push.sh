@@ -2,6 +2,8 @@
 
 # Build and Push Blockscout Frontend to GCP
 # Builds using GCP Cloud Build (remote) to avoid local memory limitations.
+# Layer caching is stored in Artifact Registry under the :buildcache tag,
+# so unchanged stages (especially the heavy `deps` stage) are reused across builds.
 # Usage: ./build-and-push.sh [VERSION]
 
 set -e
@@ -35,14 +37,22 @@ echo "Git Commit: ${GIT_COMMIT_SHA}"
 echo "Git Tag: ${GIT_TAG}"
 echo ""
 
-# Authenticate with GCP
+# Authenticate with GCP (only configures the local Docker credential helper;
+# Cloud Build itself uses its service-account credentials in the cloud)
 echo "Authenticating with GCP..."
-gcloud auth configure-docker ${REGION}-docker.pkg.dev
+gcloud auth configure-docker ${REGION}-docker.pkg.dev --quiet
 
-# Build and push using GCP Cloud Build (no local memory limit)
 echo ""
+echo "Cache strategy:"
+echo "  Pull  : ${IMAGE_PATH}:buildcache"
+echo "  Push  : ${IMAGE_PATH}:buildcache (updated after every successful build)"
+echo "  Effect: 'deps' stage (yarn install) is cached when yarn.lock is unchanged"
+echo ""
+
+BUILD_START=$(date +%s)
+
 echo "Submitting build to GCP Cloud Build..."
-echo "(This runs in the cloud - no local memory required)"
+echo "(This runs in the cloud – no local memory required)"
 echo ""
 
 gcloud builds submit \
@@ -54,14 +64,23 @@ gcloud builds submit \
   --config=cloudbuild.yaml \
   .
 
+BUILD_END=$(date +%s)
+BUILD_DURATION=$(( BUILD_END - BUILD_START ))
+BUILD_MINUTES=$(( BUILD_DURATION / 60 ))
+BUILD_SECONDS=$(( BUILD_DURATION % 60 ))
+
 echo ""
 echo "========================================="
 echo "✅ Successfully built and pushed images:"
 echo "   - ${IMAGE_PATH}:${VERSION}"
 echo "   - ${IMAGE_PATH}:${GIT_COMMIT_SHA}"
 echo "   - ${IMAGE_PATH}:latest"
+echo "   - ${IMAGE_PATH}:buildcache  (for next build)"
+echo ""
+echo "   Total build time: ${BUILD_MINUTES}m ${BUILD_SECONDS}s"
 echo "========================================="
 echo ""
 echo "To use in production, update your frontend.yml:"
 echo "  image: ${IMAGE_PATH}:${VERSION}"
 echo ""
+

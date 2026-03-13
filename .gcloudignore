@@ -1,0 +1,69 @@
+# .gcloudignore controls what is uploaded to GCP Cloud Build.
+# Keeping this small speeds up `gcloud builds submit` significantly.
+# Rules mirror .gitignore plus a few Cloud-Build-specific exclusions.
+
+# Git history – not needed for Docker builds
+.git/
+.gitignore
+
+# Local Node dependencies – installed inside Docker, never needed in source upload
+node_modules/
+node_modules_linux/
+.pnp
+.pnp.js
+
+# Next.js build output
+.next/
+out/
+build/
+analyze/
+
+# Test artefacts
+coverage/
+test-results/
+playwright-report/
+playwright/.cache/
+playwright/.browser/
+
+# Generated public assets (regenerated during Docker build)
+public/assets/envs.js
+public/assets/configs/
+public/assets/multichain/
+public/assets/essential-dapps/
+public/icons/sprite.svg
+public/icons/sprite.*.svg
+public/icons/registry.json
+public/icons/README.md
+public/static/og_image.png
+public/sitemap.xml
+public/robots.txt
+public/llms.txt
+
+# Local env / secrets
+.env*.local
+configs/envs/.env.secrets
+configs/envs/.samples
+
+# TypeScript incremental build info
+*.tsbuildinfo
+.eslintcache
+
+# macOS noise
+.DS_Store
+*.pem
+.tools
+grafana
+.zed
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Encrypted local files
+**.decrypted~**
+
+# IDE / editor folders
+.idea/
+.vscode/
