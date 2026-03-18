@@ -1,7 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
+import { readContract } from '@wagmi/core';
 
 import appConfig from 'configs/app';
 import useApiQuery from 'lib/api/useApiQuery';
+import wagmiConfig from 'lib/web3/wagmiConfig';
 
 interface RWANoteData {
   id: string;          // API returns "id" not "_id"
@@ -65,8 +67,10 @@ export default function useCheckRWANoteEligibility(
 
   const hasNote = noteData !== null;
 
-  // Fetch address info from Blockscout to check the contract deployer.
-  // /api/v2/addresses/:hash returns creator_address_hash (same-origin, no CORS issue).
+  // ── Primary check: Blockscout API (/api/v2/addresses/:hash) ──────────────
+  // Returns creator_address_hash when the internal-transactions indexer has
+  // run. On sixnet mainnet INDEXER_DISABLE_INTERNAL_TRANSACTIONS_FETCHER=true
+  // so contracts deployed after that flag was set will have creator_address_hash=null.
   const addressQuery = useApiQuery('general:address', {
     pathParams: { hash: tokenAddress },
     queryOptions: {
@@ -75,16 +79,53 @@ export default function useCheckRWANoteEligibility(
     },
   });
 
+  const creatorFromBlockscout = addressQuery.data?.creator_address_hash ?? null;
+
+  // ── Fallback check: on-chain owner() call ────────────────────────────────
+  // Activated only after Blockscout confirms it has no creator info (null).
+  // Covers mainnet where internal-tx indexing is disabled and historical
+  // creator data was never backfilled.
+  const needsOwnerFallback = addressQuery.isSuccess && creatorFromBlockscout === null;
+
+  const { data: ownerFromChain = null, isLoading: isCheckingOwnerFallback } = useQuery({
+    queryKey: [ 'contract-owner-fallback', tokenAddress ],
+    queryFn: async() => {
+      try {
+        const owner = await readContract(wagmiConfig.config, {
+          address: tokenAddress as `0x${string}`,
+          abi: [ {
+            inputs: [],
+            name: 'owner',
+            outputs: [ { internalType: 'address', name: '', type: 'address' } ],
+            stateMutability: 'view',
+            type: 'function',
+          } ] as const,
+          functionName: 'owner',
+        });
+        return (owner as string) ?? null;
+      } catch {
+        // Contract may not implement Ownable – not an error
+        return null;
+      }
+    },
+    enabled: Boolean(tokenAddress) && needsOwnerFallback,
+    staleTime: 3_600_000, // 60 minutes
+  });
+
+  // Prefer Blockscout deployer; fall back to on-chain owner()
+  const authorityAddress = creatorFromBlockscout ?? ownerFromChain;
+
   const isDeployer = Boolean(
     walletAddress &&
-    addressQuery.data?.creator_address_hash &&
-    addressQuery.data.creator_address_hash.toLowerCase() === walletAddress.toLowerCase(),
+    authorityAddress &&
+    authorityAddress.toLowerCase() === walletAddress.toLowerCase(),
   );
-  const isCheckingDeployer = addressQuery.isLoading;
 
-  // Legacy owner() check kept for backwards compatibility but no longer used by the button.
-  const isOwner = false;
-  const isCheckingOwner = false;
+  const isCheckingDeployer =
+    addressQuery.isLoading || (needsOwnerFallback && isCheckingOwnerFallback);
+
+  const isOwner = isDeployer;
+  const isCheckingOwner = isCheckingDeployer;
 
   return {
     isOwner,
