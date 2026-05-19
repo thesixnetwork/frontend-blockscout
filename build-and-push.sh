@@ -31,7 +31,8 @@ echo "========================================="
 
 # Get Git commit SHA and tag
 GIT_COMMIT_SHA=$(git rev-parse --short HEAD)
-GIT_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.0.0")
+# Use the VERSION argument as GIT_TAG so the in-app version matches the image tag
+GIT_TAG=${VERSION}
 
 echo "Git Commit: ${GIT_COMMIT_SHA}"
 echo "Git Tag: ${GIT_TAG}"
